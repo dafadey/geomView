@@ -12,7 +12,7 @@ Plus you need glfw3-dev, glew-dev and opengl dev files.
 Not supported but should work fine. Clone impgui yourself.
 ### Linux
 Just clone and make.<br>
-NOTE: first make should be executed singlethreaded and will clone imgui to the project folder.
+NOTE: first *make* should be executed singlethreaded and will clone imgui to the project folder.
 ```
 dan@localhost:~/geomView$ make
 cloning imgui
