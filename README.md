@@ -92,3 +92,4 @@ Groups A1 A2 and A3 can be hiden using check boxes.<br>
 
 Another more complicated cases may look like this:
 ![This is an image](https://github.com/dafadey/geomView/blob/main/example.png)
+Use *open* button to add more entities. Entities can be removed or hidden with corresponding buttons.
