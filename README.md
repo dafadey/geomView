@@ -90,5 +90,5 @@ The expected result is:
 ![This is an image](https://github.com/dafadey/geomView/blob/main/example_simple.png)
 Groups A1 A2 and A3 can be hiden using check boxes.<br>
 
-Another more complicated cases may look like:
+Another more complicated cases may look like this:
 ![This is an image](https://github.com/dafadey/geomView/blob/main/example.png)
