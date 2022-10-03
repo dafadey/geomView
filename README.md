@@ -5,7 +5,7 @@ The tool is usefull for visual debugging.
 
 ## Dependencies
 Project UI is [imgui](https://github.com/ocornut/imgui) based.<br>
-Plus you need glfw3-dev and glew-dev and opengl dev files.
+Plus you need glfw3-dev, glew-dev and opengl dev files.
 
 ## Build
 ### Windows
