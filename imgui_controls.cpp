@@ -49,8 +49,11 @@ namespace ImGui {
         ImGui::TreePop();
       }
     } else {
-      if(obj->item)
+      if(obj->item) {
+        PushID(reinterpret_cast<size_t>(obj));
         Checkbox(obj->name.c_str(), &(obj->item->visible));
+        PopID();
+      }
     }
     return true;
   }

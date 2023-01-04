@@ -99,10 +99,11 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     vec3f cam_y = ren->cam_up;
     normalize(cam_y);
     vec3f cam_z = ren->cam_pos - ren->fp_pos;
+    float factor = ren->parallel == false ? std::sqrt(cam_z * cam_z) : 1.f / ren->scale;
     normalize(cam_z);
     vec3f cam_x = cross_prod(cam_y, cam_z);
-    ren->cam_pos = ren->cam_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw*2.f / ren->scale;
-    ren->fp_pos = ren->fp_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw*2.f / ren->scale;
+    ren->cam_pos = ren->cam_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw*2.f * factor;
+    ren->fp_pos = ren->fp_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw*2.f * factor;
   }
 
   if(ren->mouse_state == renderer::e_mouse_state::ROTATE) {

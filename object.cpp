@@ -40,7 +40,7 @@ void load_objects(object* obj_root, const std::string& file, renderer* ren) {
   OGLlines* lines{};
   OGLpoints* points{};
   while (std::getline(ini, line)) {
-    auto line_no_spaces = remove_chars(line, ' ');
+    auto line_no_spaces = remove_chars(remove_chars(remove_chars(remove_chars(line, ' '),'\t'),char(10)),char(13));
     if(line_no_spaces.empty())
       continue;
     auto tokens = split(line_no_spaces, ":");

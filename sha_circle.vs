@@ -16,7 +16,7 @@ void main()
 {
     vColor = point_color;
     vSides = 8;//circle_resolution;
-    radii = vec2(radius*aspect.x, radius*aspect.y);
     vec4 pos = vec4(point_pos.x, point_pos.y, point_pos.z, 1);
     gl_Position = proj_matrix * (view_matrix * pos);
+    radii = vec2(radius*aspect.x, radius*aspect.y)*gl_Position.w;
 }

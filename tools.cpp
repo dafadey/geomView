@@ -32,11 +32,13 @@ std::vector<std::string> split_vectors(const std::string& input) {
     if(c=='(' || c==')' ) {
       if(!v.empty())
         output.push_back(v);
-      v="";
+      v.clear();
       continue;
     }
     v += c;
   }
+  if(!v.empty())
+    output.push_back(v);
   return output;
 }
 

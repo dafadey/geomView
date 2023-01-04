@@ -7,10 +7,10 @@ SOURCES_IMGUI := imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp img
 OBJS := $(SOURCES:%=%.o) $(SOURCES_IMGUI:%=%.o)
 
 $(TARGET_EXEC): imgui $(OBJS)
-	g++ -g -O3 $(OBJS) -o $@ -lglfw -lGLEW -lGL
+	g++ -g $(OBJS) -o $@ -lGL -lGLEW -lglfw -lrt -lm -ldl
 
 %.cpp.o: %.cpp
-	g++ -g -O3 -DNOIMPLOT -I./imgui -I./imgui/backends -c $< -o $@
+	g++ -g -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends -c $< -o $@
 
 .PHONY: imgui
 imgui:
