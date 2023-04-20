@@ -267,11 +267,15 @@ void renderer::render() {
       for(int c=0; c<3; c++)
         outline_vertex[c] = item_bounds[(i>>c) & 1][c];
       GLfloat proj = static_cast<GLfloat>((outline_vertex - cam_pos) * cam_z);
-      f = f < proj ? f : proj;
-      n = n > proj ? n : proj;
+      if(!std::isnan(proj) && !std::isinf(proj)) {
+        f = f < proj ? f : proj;
+        n = n > proj ? n : proj;
+      }
     }
   }
-
+  
+  //std::cout << "f=" << f << ", n=" << n << ", cam_pos=" << cam_pos << ", cam_z=" << cam_z << '\n';
+  
   if(parallel)
     scale = 4.f * std::tan(56.f / 2.f * 3.14f / 180.f) / std::sqrt((cam_pos - fp_pos)*(cam_pos - fp_pos));
   else
@@ -289,7 +293,7 @@ void renderer::render() {
   if(parallel) {
     proj_matrix[0] = scale;
     proj_matrix[5] = scale/static_cast<GLfloat>(win_geo[1]) * static_cast<GLfloat>(win_geo[0]);
-    proj_matrix[10] = 2/(f-n);
+    proj_matrix[10] = 2./(f-n);
     proj_matrix[14] = -(f+n)/(f-n);
     proj_matrix[11] = .0f;
     proj_matrix[15] = 1.f;

@@ -25,6 +25,14 @@ int object::memory() {
   return res;
 }
 
+void object::setItemsVisible(bool setting)
+{
+  for(auto& c : children)
+    c->setItemsVisible(setting);
+  if(item)
+    item->visible = setting;
+}
+
 void load_objects(object* obj_root, const std::string& file, renderer* ren) {
   std::ifstream ini(file.c_str());
   std::string line;

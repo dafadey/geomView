@@ -89,7 +89,8 @@ void OGLtriangles::copyVBOtoDevice() {
   }
 
   if(!VBOdata.size()) {
-    std::cerr << "no data to copy to device VBO, VBOdata is empty\n";
+    vboCopied = true;
+    std::cerr << "tri: no data to copy to device VBO, VBOdata is empty\n";
     return;
   }
 
@@ -210,7 +211,8 @@ void OGLlines::copyVBOtoDevice() {
   }
 
   if (!VBOdata.size()) {
-    std::cerr << "no data to copy to device VBO, VBOdata is empty\n";
+    vboCopied = true;
+    std::cerr << "lines: no data to copy to device VBO, VBOdata is empty\n";
     return;
   }
 
@@ -327,7 +329,8 @@ void OGLpoints::copyVBOtoDevice() {
   }
 
   if (!VBOdata.size()) {
-    std::cerr << "no data to copy to device VBO, VBOdata is empty\n";
+    vboCopied = true;
+    std::cerr << "points: no data to copy to device VBO, VBOdata is empty\n";
     return;
   }
 

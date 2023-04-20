@@ -27,6 +27,9 @@ namespace ImGui {
   bool DoObject(object* obj) {
     if (obj->children.size()) {
       if (ImGui::TreeNode(obj->name.c_str())) {
+        if(Button(obj->visible ? "untick" : "tick"))
+          obj->setItemsVisible(!obj->visible);
+        SameLine();
         if(Button(obj->visible ? "hide" : "show"))
           obj->visible = !obj->visible;
         SameLine();

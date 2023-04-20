@@ -11,6 +11,7 @@ struct object {
   
   ~object();
 
+  void setItemsVisible(bool setting);
   bool visible{true};
   OGLitem* item{nullptr};
   std::list<object*> children;
