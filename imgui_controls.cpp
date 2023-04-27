@@ -220,6 +220,8 @@ namespace ImGui {
     SameLine();
 
     modified |= Checkbox("parallel", &(ren->parallel));
+
+    ColorEdit3("bg color", ren->bg_color.data());
     
     return modified;
   }

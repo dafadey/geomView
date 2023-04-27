@@ -54,7 +54,8 @@ int main(int argc, char* argv[]) {
 
     ImGui::Render();
 
-    glClearColor(.3, .3, .3, 1.);
+    glClearColor(ren.bg_color[0], ren.bg_color[1], ren.bg_color[2], 1.);
+    //glClearColor(1., 1., 1., 1.);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //int display_w, display_h;
     //glfwGetFramebufferSize(ren.win, &display_w, &display_h);

@@ -60,6 +60,8 @@ struct renderer {
   std::vector<OGLitem*> get_items();
   
   bool parallel=true;
+  
+  std::array<GLfloat, 3> bg_color {.3, .3, .3};
 
 };
 
