@@ -78,6 +78,10 @@ void OGLtriangles::init(renderer* ren_) {
   glBindVertexArray(0);
 }
 
+GLuint OGLtriangles::VBOstride() const {
+  return 9;
+}
+
 void OGLtriangles::copyVBOtoDevice() {
   if (vboCopied)
     return;
@@ -200,6 +204,10 @@ void OGLlines::init(renderer* ren_) {
   glBindVertexArray(0);
 }
 
+GLuint OGLlines::VBOstride() const {
+  return 6;
+}
+
 void OGLlines::copyVBOtoDevice() {
   if (vboCopied)
     return;
@@ -318,6 +326,10 @@ void OGLpoints::init(renderer* ren_) {
   glBindVertexArray(0);
 }
 
+GLuint OGLpoints::VBOstride() const {
+  return 7;
+}
+
 void OGLpoints::copyVBOtoDevice() {
   if (vboCopied)
     return;
@@ -344,7 +356,7 @@ void OGLpoints::copyVBOtoDevice() {
 
   points_count = VBOdata.size() * sizeof(float) / size_of_OGL_vertex;
 
-  //memory: 3 coords, 3 colors
+  //memory: 3 coords, 1 radius, 3 colors
   glVertexAttribPointer(verts_location, 3, GL_FLOAT, GL_FALSE, size_of_OGL_vertex, (void*)0);
   glVertexAttribPointer(radii_location, 1, GL_FLOAT, GL_FALSE, size_of_OGL_vertex, (void*)(3 * sizeof(float)));
   glVertexAttribPointer(colors_location, 3, GL_FLOAT, GL_FALSE, size_of_OGL_vertex, (void*)(4 * sizeof(float)));

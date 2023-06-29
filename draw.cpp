@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <algorithm>
 
 #include <GLFW/glfw3.h>
 
@@ -150,6 +151,63 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
 
 }
 
+static void select_object(const object* obj, const renderer* ren, std::vector<std::pair<const object*, GLfloat>>& res) 
+{
+  int win_geo[2];
+  glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
+  vec2f pos{(GLfloat) ren->mouse_pos[0] / (GLfloat) win_geo[0], -(GLfloat) ren->mouse_pos[1] / (GLfloat) win_geo[1]};
+  pos = 2.f * (pos - vec2f{.5f, -.5f});
+  //std::cout << "pos=(" << pos[0] << ", " << pos[1] << ")\n";
+  for(auto& co : obj->children)
+    select_object(co, ren, res);
+  if(!obj->item)
+    return;
+  GLfloat minDist2 = 13.0f;
+  for(int i=0; i<obj->item->VBOdata.size(); i+=obj->item->VBOstride())
+  {
+    vec3f pt{obj->item->VBOdata[i], obj->item->VBOdata[i+1], obj->item->VBOdata[i+2]};
+    //std::cout << "pt=(" << pt[0] << ", " << pt[1] << ", " << pt[2] << ")\n";
+    vec2f p = ren->project(pt);
+    //std::cout << "p=(" << p[0] << ", " << p[1] << ")\n";
+    GLfloat dist2 = (p - pos) * (p - pos);
+    minDist2 = std::min(dist2, minDist2);
+  }
+  res.push_back(std::make_pair(obj,minDist2));
+  //std::cout << "obj: " << obj->name << " minDist2=" << minDist2 << '\n';
+}
+
+vec2f renderer::project(const vec3f& pt) const {
+  vec4f in{pt[0], pt[1], pt[2], 1.f};
+  vec4f v{.0f, .0f, .0f, .0f};
+  for(int j = 0; j < 4; j++) {
+    v[j] = .0f;
+    for(int i = 0; i < 4; i++)
+      v[j] += in[i] * view_matrix[i * 4 + j];
+  }
+
+  vec4f o=v;
+  for(int j = 0; j < 4; j++) {
+    o[j] = .0f;
+    for(int i = 0; i < 4; i++) {
+      o[j] += v[i] * proj_matrix[i * 4 + j];
+    }
+  }
+  o[0] /= o[3];
+  o[1] /= o[3];
+  o[3] /= o[3];
+  return vec2f{o[0], o[1]};
+}
+
+std::vector<std::pair<const object*, GLfloat>> renderer::select() const {
+  std::vector<std::pair<const object*, GLfloat>> res;
+  std::cout << "select\n";
+  select_object(obj, this, res);
+  std::sort(res.begin(), res.end(), [](const std::pair<const object*, GLfloat>& a, const std::pair<const object*, GLfloat>& b) {return a.second > b.second;});
+  for(const auto& it : res)
+    std::cout << it.first->name << " : " << it.second << '\n';
+  return res;
+}
+
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
   renderer* r = (renderer*)glfwGetWindowUserPointer(window);
   if (r->nocallbacks)
@@ -163,6 +221,9 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   if (action == GLFW_RELEASE)
     r->mouse_state = renderer::e_mouse_state::HOVER;
 
+  if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+    r->select();
+  }
 }
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -305,11 +366,17 @@ void renderer::render() {
     proj_matrix[14] = f*n/(f-n);
     proj_matrix[15] = 0.f;
   }
-
+  /*
+  GLfloat nearfarVal[2];
+  glGetFloatv(GL_DEPTH_RANGE, nearfarVal);
+  std::cout << "near=" << nearfarVal[0] << ", far=" << nearfarVal[1] << '\n';
+  std::cout << "n=" << n << ", f=" << f << '\n';
+  */
   GLfloat light[3]{static_cast<GLfloat>(light_dir[0]), static_cast<GLfloat>(light_dir[1]), static_cast<GLfloat>(light_dir[2])};
 
-  for(auto& item : items)
+  for(auto& item : items) {
     item->draw(view_matrix.data(), proj_matrix.data(), light);
+  }
 }
 
 GLuint renderer::getShader(const std::string& vs_name, const std::string& fs_name, const std::string& gs_name) {

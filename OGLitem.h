@@ -19,6 +19,7 @@ struct OGLitem {
   GLuint VBO{};
   GLuint vao{};
   GLuint shader{};
+  virtual GLuint VBOstride() const = 0;
 
   vec3f geo_min{ FLT_MAX, FLT_MAX, FLT_MAX };
   vec3f geo_max{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
@@ -37,6 +38,7 @@ struct OGLtriangles : public OGLitem {
   virtual void init(renderer* ren) override;
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) override;
   virtual void copyVBOtoDevice() override;
+  virtual GLuint VBOstride() const override;
   void addTriangle(const std::array<vec3f, 3>& coords, const vec3f& color);
 
   GLint verts_location{};
@@ -57,6 +59,7 @@ struct OGLlines : public OGLitem {
   virtual void init(renderer* ren) override;
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) override;
   virtual void copyVBOtoDevice() override;
+  virtual GLuint VBOstride() const override;
   void addLine(const std::array<vec3f, 2>& coords, const vec3f& color);
 
   GLint verts_location{};
@@ -71,6 +74,8 @@ struct OGLpoints : public OGLitem {
   virtual void init(renderer* ren) override;
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) override;
   virtual void copyVBOtoDevice() override;
+  virtual GLuint VBOstride() const override;
+
   void addPoint(const vec3f& coords, float radius, const vec3f& color);
 
   GLint verts_location{};

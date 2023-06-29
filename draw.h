@@ -48,6 +48,10 @@ struct renderer {
   bool init(GLFWwindow*, object*);
   
   void render();
+  
+  vec2f project(const vec3f&) const;
+  
+  std::vector<std::pair<const object*, GLfloat>> select() const;
 
   void set_callbacks(GLFWwindow* window);
   
