@@ -68,7 +68,8 @@ namespace ImGui {
     if (BeginPopupModal("open file", NULL, ImGuiWindowFlags_None)) {
       static std::filesystem::path path = std::filesystem::current_path();
       static int selected=-1;
-      static std::filesystem::path selected_file;
+      //static std::filesystem::path selected_file;
+      static std::string selected_file;
       int items_in_dir=0;
 
       #ifdef WIN32
@@ -92,47 +93,27 @@ namespace ImGui {
         }
         SameLine();
       }
-      //std::cout << "new path is " << newpath.str() << '\n';
       newpath >> path;
       Text("");
-      /*
-      int item_id=0;
-      for(auto const& dir_entry : std::filesystem::directory_iterator(path)) {
-        if(Selectable(dir_entry.path().filename().string().c_str(), selected == item_id, ImGuiSelectableFlags_DontClosePopups)) {
-          if(std::filesystem::is_directory(dir_entry.path())) {
-            selected = -1;
-            newpath.clear();
-            auto dirs = split(dir_entry.path().string().c_str(), path_delimiter);
-            for (auto d : dirs) {
-              if (d.empty())
-                continue;
-              newpath << d << path_delimiter;
-            }
-            newpath >> path;
-          } else
-            selected = item_id;
-            selected_file = dir_entry.path();
-        }
-        item_id++;
-      }
-      */
-      std::vector<std::filesystem::path> pathes;
+      std::vector<std::pair<std::string, bool>> pathes;
       for (auto const& dir_entry : std::filesystem::directory_iterator(path))
-        pathes.push_back(dir_entry.path());
-      std::stable_sort(pathes.begin(), pathes.end(), [](const std::filesystem::path& a, const std::filesystem::path& b)->bool {return std::filesystem::is_directory(a) && !std::filesystem::is_directory(b);});
+        pathes.push_back(std::make_pair(dir_entry.path().filename().string(), std::filesystem::is_directory(dir_entry)));
 
-      std::vector<std::string> strings;
-      for(const auto& p : pathes)
-        strings.push_back(p.filename().string());
+      std::stable_sort(pathes.begin(), pathes.end(), [](const std::pair<std::string, bool>& a, const std::pair<std::string, bool>& b)->bool {
+        if(a.second == b.second)
+          return a.first < b.first;
+        return a.second && !b.second;
+      });
+
       std::vector<const char*> cstrings;
-      for (const auto& s : strings)
-        cstrings.push_back(s.c_str());
+      for (const auto& p : pathes)
+        cstrings.push_back(p.first.c_str());
       
-      if (ListBox(" ", &selected, cstrings.data(), cstrings.size(), 13)) {
+      if (ListBox(" ", &selected, cstrings.data(), cstrings.size(), 22)) {
         if (selected != -1) {
-          if(std::filesystem::is_directory(pathes[selected])) {
+          if(pathes[selected].second) {
             newpath.clear();
-            auto dirs = split(pathes[selected].string().c_str(), path_delimiter);
+            auto dirs = split((path.string() + pathes[selected].first).c_str(), path_delimiter);
             for (auto d : dirs) {
               if (d.empty())
                 continue;
@@ -141,7 +122,7 @@ namespace ImGui {
             newpath >> path;
             selected = -1;
           } else
-            selected_file = pathes[selected];
+            selected_file = path.string()+pathes[selected].first;
         } 
       }
       
@@ -150,12 +131,11 @@ namespace ImGui {
       SameLine();
       if(selected != -1) {
         if(Button("open")) {
-          std::cout << "opening " << selected_file.string() << '\n';
-          load_objects(obj, selected_file.string(), ren);
+          std::cout << "opening " << selected_file << '\n';
+          load_objects(obj, selected_file, ren);
           CloseCurrentPopup();
         }
       }
-      //std::cout << "selected = " << selected << '\n';
       EndPopup();
     }
     DoObject(obj);  
