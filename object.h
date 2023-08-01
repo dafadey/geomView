@@ -20,3 +20,4 @@ struct object {
 
 void load_objects(object* obj_root, const std::string& file, renderer* ren);
 
+void reload(object* obj_root);

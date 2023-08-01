@@ -36,6 +36,13 @@ OGLitem* newOGLitem(const std::string& type) {
   }
 }
 
+void OGLitem::clear() {
+  geo_min = vec3f{ FLT_MAX, FLT_MAX, FLT_MAX };
+  geo_max = vec3f{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
+  VBOdata.clear();
+  vboCopied = false;
+}
+
 void OGLtriangles::init(renderer* ren_) {
   ren = ren_;
 

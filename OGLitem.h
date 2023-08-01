@@ -15,7 +15,8 @@ struct OGLitem {
   virtual void copyVBOtoDevice() = 0;
   std::array<vec3f, 2> get_bounds() const;
   virtual ~OGLitem();
-
+  virtual void clear();
+  
   GLuint VBO{};
   GLuint vao{};
   GLuint shader{};

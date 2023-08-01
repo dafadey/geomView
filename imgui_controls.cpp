@@ -65,6 +65,9 @@ namespace ImGui {
     ImGui::Begin("objects");
     if (Button("open"))
       OpenPopup("open file");
+    SameLine();
+    if(Button("reload"))
+      reload(obj);
     if (BeginPopupModal("open file", NULL, ImGuiWindowFlags_None)) {
       static std::filesystem::path path = std::filesystem::current_path();
       static int selected=-1;
