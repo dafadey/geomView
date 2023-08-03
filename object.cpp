@@ -1,5 +1,6 @@
 #include <fstream>
 #include <array>
+#include <set>
 
 #include "object.h"
 //#include "saveSTL.h"
@@ -103,7 +104,7 @@ void load_objects(object* obj_root, const std::string& file, renderer* ren) {
   obj_root->children.push_back(output);
 }
 
-static void reload(object* in_obj, std::string& filename) {
+static void reload(object* in_obj, std::string& filename, renderer* ren) {
   std::ifstream ini(filename.c_str());
   std::string line;
 
@@ -113,6 +114,11 @@ static void reload(object* in_obj, std::string& filename) {
   OGLlines* lines{};
   OGLpoints* points{};
   object* obj{};
+  auto last_found = in_obj->children.begin();
+  std::set<object*> objects_to_remove;
+  for(auto o : in_obj->children)
+    objects_to_remove.insert(o);
+  
   while (std::getline(ini, line)) {
     auto line_no_spaces = remove_chars(remove_chars(remove_chars(remove_chars(line, ' '),'\t'),char(10)),char(13));
     if(line_no_spaces.empty())
@@ -121,7 +127,8 @@ static void reload(object* in_obj, std::string& filename) {
     if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "points") {
       obj = nullptr;
       //super slow search with crasy string comparisons. who cares!
-      for(object* o : in_obj->children) {
+      for(auto it = in_obj->children.begin(); it != in_obj->children.end(); it++) {
+        object* o = *it;
         std::string o_type{};
         if(dynamic_cast<OGLtriangles*>(o->item))
           o_type = "triangles";
@@ -130,8 +137,21 @@ static void reload(object* in_obj, std::string& filename) {
         if(dynamic_cast<OGLpoints*>(o->item))
           o_type = "points";
           
-        if(tokens.size() > 1 && o->name== tokens[1] && o_type==tokens[0]) //groups with "unknown" name are skipped
-          obj=o;
+        if(tokens.size() > 1 && o->name == tokens[1] && o_type == tokens[0]) { //groups with "unknown" name are skipped
+          obj = o;
+          last_found = it;
+          objects_to_remove.erase(o);
+        }
+      }
+      std::cout << "last_found=" << (*last_found)->name << '\n';
+      if(!obj) {
+        obj = new object();
+        std::string type = tokens[0];
+        obj->item = newOGLitem(type);
+        obj->item->init(ren);
+        obj->name = tokens.size() > 1 ? tokens[1] : "<noname>";
+        last_found++;
+        in_obj->children.insert(last_found, obj);
       }
       std::cout << "\treloading gorup " << obj->name << '\n';
       triangles = dynamic_cast<OGLtriangles*>(obj->item);
@@ -180,11 +200,17 @@ static void reload(object* in_obj, std::string& filename) {
       }
     }
   }
+  
+  for(auto o : objects_to_remove)
+  {
+    delete o;
+    in_obj->children.remove(o);
+  }
 }
 
-void reload(object* obj_root) {
+void reload(object* obj_root, renderer* ren) {
   for(object* c : obj_root->children) {
     std::cout << "reloading file " << c->name << '\n';
-    reload(c, c->name);
+    reload(c, c->name, ren);
   }
 }
