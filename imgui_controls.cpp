@@ -148,8 +148,10 @@ namespace ImGui {
 
   bool CameraControl(renderer* ren) {
     bool modified = false;
-    vec3f dir{0,0,0};
-    vec3f up;
+    vec3f dir = ren->fp_pos - ren->cam_pos;
+    vec3f up = ren->cam_up;
+    normalize(dir);
+    normalize(up);
     if(Button("x+")) {
       modified = true;
       dir = vec3f{1,0,0};
@@ -185,8 +187,19 @@ namespace ImGui {
       dir = vec3f{0,0,-1};
       up = vec3f{1,0,0};
     }
-
-    ::_update_camera(dir, up, ren);
+    SameLine();
+    if(Button("+90")) {
+      modified = true;
+      up = cross_prod(dir,up);
+    }
+    SameLine();
+    if(Button("-90")) {
+      modified = true;
+      up = cross_prod(up,dir);
+    }
+    
+    if(modified)
+      ::_update_camera(dir, up, ren);
 
     if (Button("center")) {
       modified = true;
