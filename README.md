@@ -9,10 +9,66 @@ Plus you need glfw3-dev, glew-dev and opengl dev files.
 
 ## Build
 ### Windows
-Not supported but should work fine. Clone impgui yourself.
+The easiest way to build *geomView* on Windows is to use *MSYS2*. It shold take you ~1.5Gb of free space.
+*MSYS2* is a complete unix sub-system where you have package manager and console where you feel yourself as you are in Linux.
+Yet it may not be familiar to Windows users so the build process is described in details further and as a result you supposed to get native Windows 86_x64 binary. <br>
+**NOTE** geomView requires C++17 so do not try building manually with outdated Visual Studio. I suggest MSYS2 since it requires appropriate disk space and installation time.<br>
+So let us get to it...
+#### 1. Install MSYS2
+Get MSYS2 installer from [MSYS2](https://www.msys2.org) official site
+
+#### 2. Run MSYS MINGW64
+Should look like that:
+```
+dan@DESKTOP-A9IF9F9 MINGW64 ~
+```
+**NOTE** *MINGW64* postfix in prompt<br>
+From now on you are working in MSYS2 console window.
+
+#### 3. Install gcc_w64_x86_64 from MSYS2 repository:
+pacman -S mingw-w64-x86_64-gcc
+
+#### 4. Install make from MSYS2 repository:
+pacman -S make
+
+#### 5. Install glew from MSYS2 repository:
+pacman -S mingw-w64-x86_64-glew
+
+#### 5. Get glfw3
+Download 64bit GLFW3 binary from [glfw3 win64 binary](https://www.glfw.org/download.html)
+and put it to your home folder (typically C:\msys64\home\%USERNAME)
+
+#### 6. Install git from MSYS2 repository:
+pacman -S git
+
+#### 6. Get geomView
+git clone https://github.com/dafadey/geomView.git
+
+#### 7. Build:
+Get to geomView folder after cloning and run the following command
+```
+LIBRARY_PATH=/home/${USERNAME}/glfw-3.3.8.bin.WIN64/lib-mingw-w64 CPATH=/home/${USERNAME}/glfw-3.3.8.bin.WIN64/include make
+```
+**NOTE**: Check path validity for actual glfw version you downloaded.<br>
+**NOTE**: Make process will clone *imgui* library. If you familiar with *imgui* library go to *Makefile*, remove *imgui* clonning commands and manually set *imgui* pathes. Also please note that *geomView* uses specific tag of *imgui* for stability reasons. *Imgui* is used as source code and not compiled as separate developer library.<br>
+**NOTE**: *Makefile* uses *OS* environment variable and expects it to be "Windows_NT". Please check *env* in *MSYS2* console in case of troubles with linkage.<br>
+Refer to Linux section to see the output of your build command. It should look pretty much the same in MSYS2 console.
+
+#### Executing geomView:
+You built *geomView* 86_x64, it depends on certain dll-s from Windows folder and MSYS2 folder (typically C:\msys64\mingw64\bin). You can start if right from MSYS2 console where you successfully finished build process because C:\msys64\mingw64\bin is already in PATH environment variable. To make geomView work from any other location you can either add C:\msys64\mingw64\bin to system environment variable PATH or copy all needed libraries nearby your installation. Tha latter is not preffered since you have to do it every time you rebuild your geomView. With latter methiod you are manually preparing release version of geomView.
+
+#### Updating geomView
+Run MSYS MINGW64 console<br>
+Change dir to geomView<br>
+Run ``git pull`` to update the source code<br>
+Run ``LIBRARY_PATH=/home/${USERNAME}/glfw-3.3.8.bin.WIN64/lib-mingw-w64 CPATH=/home/${USERNAME}/glfw-3.3.8.bin.WIN64/include make``
+
+#### Outdated OpenGL version
+On GPU-less workstations/Virtual Box systems OpenGL might be limited to 1.1 version. GeomView requires GL3.3 with GLSL 330. If your CPU is powerfull enough you can download [MESA3D](https://fdossena.com/?p=mesa/index.frag) which is a software emulation of GPU. It utilizes all your cores to render the scene. Inside archive you will find opengl32.dll which you have to place right next to your geomView binary. That is it!
+
 ### Linux
 Just clone and make.<br>
-NOTE: first *make* should be executed singlethreaded and will clone imgui to the project folder.
+**NOTE**: first *make* should be executed singlethreaded and will clone imgui to the project folder.
 ```
 dan@localhost:~/geomView$ make
 cloning imgui

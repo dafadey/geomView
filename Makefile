@@ -6,9 +6,14 @@ SOURCES_IMGUI := imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp img
 
 OBJS := $(SOURCES:%=%.o) $(SOURCES_IMGUI:%=%.o)
 
-$(TARGET_EXEC): imgui $(OBJS)
-	g++ -g $(OBJS) -o $@ -lGL -lGLEW -lglfw -lrt -lm -ldl
+ifeq "$(OS)" "Windows_NT"
+	libs := -lopengl32 -lglew32 -lglfw3 -lgdi32
+else
+	libs := -lGL -lGLEW -lglfw -lrt -lm -ldl
+endif
 
+$(TARGET_EXEC): imgui $(OBJS)
+	g++ -g $(OBJS) -o $@ $(libs) 
 %.cpp.o: %.cpp
 	g++ -g -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends -c $< -o $@
 

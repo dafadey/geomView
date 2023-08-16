@@ -1,9 +1,61 @@
 #include "interface.h"
 #include <iostream>
+#include <array>
 
 static void glfw_error_callback(int error, const char* description)
 {
     std::cerr << "Glfw Error " << error << ": " << description << '\n' << std::flush;
+}
+
+mainwin_config mainwin_conf;
+
+void* desk_Data_ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name) {
+  return (void*) &mainwin_conf;
+}
+
+static std::array<std::string, 2> tokenize(const std::string& s) 
+{
+  std::array<std::string, 2> tokens;
+  size_t pos = s.find("=");
+  if(pos != std::string::npos) {
+    tokens[0] = s.substr(0,pos);
+    tokens[1] = s.substr(pos+1);
+  }
+  return tokens;
+}
+
+void desk_Data_ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line) {
+  auto dc = (mainwin_config*)entry;
+  auto tokens = tokenize(std::string(line));
+  if(tokens[0] == "width")
+    dc->width = atoi(tokens[1].c_str());
+  if(tokens[0] == "height")
+    dc->height = atoi(tokens[1].c_str());
+  if(tokens[0] == "posx")
+    dc->posx = atoi(tokens[1].c_str());
+  if(tokens[0] == "posy")
+    dc->posy = atoi(tokens[1].c_str());
+  if(tokens[0] == "file")
+    dc->recent_files.push_back(tokens[1]);
+}
+
+void desk_Data_WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out_buf) {
+  auto window = *static_cast<GLFWwindow**>(handler->UserData);
+  out_buf->append("[MainSize][desk]\n");
+  int w,h;
+  glfwGetWindowSize(window, &w, &h);
+  mainwin_conf.width = w;
+  mainwin_conf.height = h;
+  int x,y;
+  glfwGetWindowPos(window, &x, &y);
+  mainwin_conf.posx = x;
+  mainwin_conf.posy = y;
+  out_buf->append(("width="+std::to_string(mainwin_conf.width)+'\n').c_str());
+  out_buf->append(("height="+std::to_string(mainwin_conf.height)+'\n').c_str());
+  out_buf->append(("posx="+std::to_string(mainwin_conf.posx)+'\n').c_str());
+  out_buf->append(("posy="+std::to_string(mainwin_conf.posy)+'\n').c_str());
+  for(const auto& fl : mainwin_conf.recent_files)
+    out_buf->append(("file="+fl+'\n').c_str());
 }
 
 bool imgui_interface::init() {
@@ -21,22 +73,34 @@ bool imgui_interface::init() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
-  
-  // Create window with graphics context
-  window = glfwCreateWindow(1024, 768, "3D geometry viewer", NULL, NULL);
-  if (window == NULL) {
-    std::cerr << "interface::init: ERROR: failed to create glfw window\n";
-    return false;
-  }
-  glfwMakeContextCurrent(window);
-  glfwSwapInterval(1); // Enable vsync
 
   IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
+  auto imgui_ctx = ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO(); (void)io;
   #ifndef NOIMPLOT
   ImPlot::CreateContext();
   #endif
+  
+  ImGuiSettingsHandler desk_ini_handler;
+  desk_ini_handler.TypeName = "MainSize";
+  desk_ini_handler.TypeHash = ImHashStr("MainSize");
+  desk_ini_handler.ReadOpenFn = desk_Data_ReadOpen;
+  desk_ini_handler.ReadLineFn = desk_Data_ReadLine;
+  desk_ini_handler.WriteAllFn = desk_Data_WriteAll;
+  desk_ini_handler.UserData = static_cast<void*>(&window);
+  
+  imgui_ctx->SettingsHandlers.push_back(desk_ini_handler);
+  ImGui::LoadIniSettingsFromDisk(imgui_ctx->IO.IniFilename); // it seems to be perfectly fine to call this after context is created and before ImGui::NewFrame or any other ImGui drawing command
+  // Create window with graphics context
+  window = glfwCreateWindow(mainwin_conf.width, mainwin_conf.height, "3D geometry viewer", NULL, NULL);
+  if (window == NULL) {
+    std::cerr << "interface::init: ERROR: failed to create glfw window\n";
+    return false;
+  }
+  glfwSetWindowPos(window, mainwin_conf.posx, mainwin_conf.posy);
+
+  glfwMakeContextCurrent(window);
+  glfwSwapInterval(1); // Enable vsync
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();

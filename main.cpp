@@ -7,11 +7,6 @@
 
 int main(int argc, char* argv[]) {
   std::cout << "Hallo!\n";
-
-  if(argc == 1) {
-    std::cout << "set input files" << std::endl;
-    return 0;
-  }
     
   imgui_interface iface;
   iface.init();

@@ -34,7 +34,7 @@ void object::setItemsVisible(bool setting)
     item->visible = setting;
 }
 
-void load_objects(object* obj_root, const std::string& file, renderer* ren) {
+bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
   std::ifstream ini(file.c_str());
   std::string line;
 
@@ -101,7 +101,13 @@ void load_objects(object* obj_root, const std::string& file, renderer* ren) {
       }
     }
   }
-  obj_root->children.push_back(output);
+  if(output->children.size()) {
+    obj_root->children.push_back(output);
+    return true;
+  } else {
+    delete output;
+    return false;
+  }
 }
 
 static void reload(object* in_obj, std::string& filename, renderer* ren) {
