@@ -6,13 +6,13 @@ layout(line_strip, max_vertices = 64) out;
 in vec3 vColor[];
 in float vSides[];
 in vec2 radii[];
-out vec3 fColor;
+out vec3 color;
 
 const float PI = 3.1415926;
 
 void main()
 {
-    fColor = vColor[0];
+    color = vColor[0];
 
     for (int i = 0; i <= vSides[0]; i++) {
         float ang = PI * 2.0 / (vSides[0] - 1) * i;

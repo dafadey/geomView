@@ -6,6 +6,17 @@
 
 #include "GLFW/glfw3.h"
 
+static std::array<float, 2> getAspect(renderer* ren) {
+  std::array<float, 2> aspect{1.f, 1.f};
+  if(ren) {
+    int win_geo[2];
+    glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
+    for(int i=0;i<2;i++)
+      aspect[i] = 2.f/static_cast<float>(win_geo[i]);
+  }
+  return aspect;
+}
+
 OGLitem::OGLitem() : vao(0), VBO(0), shader(0) {}
 
 OGLitem::~OGLitem() {
@@ -28,6 +39,8 @@ OGLitem* newOGLitem(const std::string& type) {
     return new OGLtriangles();
   } else if (type == "lines") {
     return new OGLlines();
+  } else if (type == "vectors") {
+    return new OGLvectors();
   } else if (type == "points") {
     return new OGLpoints();
   } else {
@@ -194,14 +207,14 @@ void OGLlines::init(renderer* ren_) {
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  shader = ren->getShader("sha_line.vs", "sha_line.fs");
+  shader = ren->getShader("sha_line.vs", "sha.fs");
 
   verts_location = glGetAttribLocation(shader, "vertex_pos");
   colors_location = glGetAttribLocation(shader, "line_color");
 
   proj_matrix_location = glGetUniformLocation(shader, "proj_matrix");
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
-
+  aspect_location = glGetUniformLocation(shader, "aspect");
 
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: colors_location=" << colors_location << '\n';
@@ -209,6 +222,22 @@ void OGLlines::init(renderer* ren_) {
   std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
   glBindVertexArray(0);
+}
+
+void OGLvectors::init(renderer* ren_) {
+  OGLlines::init(ren_);
+  if (vao) {
+    glBindVertexArray(vao);
+    shader = ren->getShader("sha_vector.vs", "sha.fs", "sha_vector.gs");
+    verts_location = glGetAttribLocation(shader, "vertex_pos");
+    colors_location = glGetAttribLocation(shader, "line_color");
+
+    proj_matrix_location = glGetUniformLocation(shader, "proj_matrix");
+    view_matrix_location = glGetUniformLocation(shader, "view_matrix");
+    aspect_location = glGetUniformLocation(shader, "aspect");
+    glBindVertexArray(0);
+  } else
+    std::cout << "failed to get vao\n";
 }
 
 GLuint OGLlines::VBOstride() const {
@@ -275,6 +304,7 @@ void OGLlines::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_d
 
   glUniformMatrix4fv(view_matrix_location, 1, false, view_matrix);
   glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix);
+  glUniform2fv(aspect_location, 1, getAspect(ren).data());
 
   glBindVertexArray(vao);
 
@@ -313,7 +343,7 @@ void OGLpoints::init(renderer* ren_) {
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  shader = ren->getShader("sha_circle.vs", "sha_circle.fs", "sha_circle.gs");
+  shader = ren->getShader("sha_circle.vs", "sha.fs", "sha_circle.gs");
 
   verts_location = glGetAttribLocation(shader, "point_pos");
   radii_location = glGetAttribLocation(shader, "radius");
@@ -398,16 +428,7 @@ void OGLpoints::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_
 
   glUniformMatrix4fv(view_matrix_location, 1, false, view_matrix);
   glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix);
- 
-  float aspect[2]{1.f, 1.f};
-  if(ren) {
-    int win_geo[2];
-    glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
-    for(int i=0;i<2;i++)
-      aspect[i] = 2.f/static_cast<float>(win_geo[i]);
-  }
-
-  glUniform2fv(aspect_location, 1, aspect);
+  glUniform2fv(aspect_location, 1, getAspect(ren).data());
 
   glBindVertexArray(vao);
 

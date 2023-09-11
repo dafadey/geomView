@@ -28,6 +28,11 @@ struct OGLitem {
   std::vector<GLfloat> VBOdata;
   bool visible = true;
   renderer* ren{};
+  GLint verts_location{};
+  GLint colors_location{};
+  GLint proj_matrix_location{};
+  GLint view_matrix_location{};
+  GLint aspect_location{};
 
   bool vboCopied{};
   int memory();
@@ -42,13 +47,9 @@ struct OGLtriangles : public OGLitem {
   virtual GLuint VBOstride() const override;
   void addTriangle(const std::array<vec3f, 3>& coords, const vec3f& color);
 
-  GLint verts_location{};
   GLint norms_location{};
-  GLint colors_location{};
   GLint light_location{};
   GLint shiny_location{};
-  GLint proj_matrix_location{};
-  GLint view_matrix_location{};
   
   GLfloat surface_color[3]{.5f, .5f, .5f};
   GLfloat shiny{0.3};
@@ -63,12 +64,11 @@ struct OGLlines : public OGLitem {
   virtual GLuint VBOstride() const override;
   void addLine(const std::array<vec3f, 2>& coords, const vec3f& color);
 
-  GLint verts_location{};
-  GLint colors_location{};
-  GLint proj_matrix_location{};
-  GLint view_matrix_location{};
-
   GLint lines_count{};
+};
+
+struct OGLvectors : public OGLlines {
+  virtual void init(renderer* ren) override;
 };
 
 struct OGLpoints : public OGLitem {
@@ -79,12 +79,6 @@ struct OGLpoints : public OGLitem {
 
   void addPoint(const vec3f& coords, float radius, const vec3f& color);
 
-  GLint verts_location{};
   GLint radii_location{};
-  GLint colors_location{};
-  GLint proj_matrix_location{};
-  GLint view_matrix_location{};
-  GLint aspect_location{};
-
   GLint points_count{};
 };

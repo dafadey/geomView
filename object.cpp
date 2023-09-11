@@ -53,7 +53,7 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
     if(line_no_spaces.empty())
       continue;
     auto tokens = split(line_no_spaces, ":");
-    if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "points") {
+    if(tokens[0] == "triangles" || tokens[0] == "lines"  || tokens[0] == "vectors" || tokens[0] == "points") {
       obj = new object();
       type = tokens[0];
       obj->item = newOGLitem(type);
@@ -68,36 +68,37 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
         triangles = dynamic_cast<OGLtriangles*>(obj->item);
       else if (type == "lines")
         lines = dynamic_cast<OGLlines*>(obj->item);
+      else if (type == "vectors")
+        lines = dynamic_cast<OGLvectors*>(obj->item);
       else if (type == "points")
         points = dynamic_cast<OGLpoints*>(obj->item);
-    }
-    else {
-      auto vectors = split_vectors(line_no_spaces);
+    } else {
+      auto vects = split_vectors(line_no_spaces);
       if(points) {
-        if(vectors.size() == 1)
-          points->addPoint(make_vector(vectors[0]), 3, vec3f{1.f,1.f,1.f});
-        else if (vectors.size() == 2)
-          points->addPoint(make_vector(vectors[0]), atof(vectors[1].c_str()), vec3f{ 1.f,1.f,1.f });
-        else if (vectors.size() == 3)
-          points->addPoint(make_vector(vectors[0]), atof(vectors[1].c_str()), make_vector(vectors[2]));
+        if(vects.size() == 1)
+          points->addPoint(make_vector(vects[0]), 3, vec3f{1.f,1.f,1.f});
+        else if (vects.size() == 2)
+          points->addPoint(make_vector(vects[0]), atof(vects[1].c_str()), vec3f{ 1.f,1.f,1.f });
+        else if (vects.size() == 3)
+          points->addPoint(make_vector(vects[0]), atof(vects[1].c_str()), make_vector(vects[2]));
       }
       if (lines) {
-        if(vectors.size() < 2)
+        if(vects.size() < 2)
           continue;
-        std::array<vec3f, 2> coords{make_vector(vectors[0]), make_vector(vectors[1])};
-        if (vectors.size() == 2)
+        std::array<vec3f, 2> coords{make_vector(vects[0]), make_vector(vects[1])};
+        if (vects.size() == 2)
           lines->addLine(coords, vec3f{1.f,1.f,1.f});
-        else if (vectors.size() == 3)
-          lines->addLine(coords, make_vector(vectors[2]));
+        else if (vects.size() == 3)
+          lines->addLine(coords, make_vector(vects[2]));
       }
       if (triangles) {
-        if (vectors.size() < 3)
+        if (vects.size() < 3)
           continue;
-        std::array<vec3f, 3> coords{ make_vector(vectors[0]), make_vector(vectors[1]), make_vector(vectors[2]) };
-        if (vectors.size() == 3)
+        std::array<vec3f, 3> coords{ make_vector(vects[0]), make_vector(vects[1]), make_vector(vects[2]) };
+        if (vects.size() == 3)
           triangles->addTriangle(coords, vec3f{ 1.f,1.f,1.f });
-        else if (vectors.size() == 4)
-          triangles->addTriangle(coords, make_vector(vectors[3]));
+        else if (vects.size() == 4)
+          triangles->addTriangle(coords, make_vector(vects[3]));
       }
     }
   }
@@ -130,10 +131,10 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
     if(line_no_spaces.empty())
       continue;
     auto tokens = split(line_no_spaces, ":");
-    if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "points") {
+    if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "vectors" || tokens[0] == "points") {
       std::cout << "working with " << tokens[1] << '\n';
       obj = nullptr;
-      //super slow search with crasy string comparisons. who cares!
+      //super slow search with crazy string comparisons. who cares!
       for(auto it = in_obj->children.begin(); it != in_obj->children.end(); it++) {
         object* o = *it;
         std::string o_type{};
@@ -141,6 +142,8 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
           o_type = "triangles";
         if(dynamic_cast<OGLlines*>(o->item))
           o_type = "lines";
+        if(dynamic_cast<OGLvectors*>(o->item))
+          o_type = "vectors";
         if(dynamic_cast<OGLpoints*>(o->item))
           o_type = "points";
           
@@ -166,46 +169,35 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
       triangles = dynamic_cast<OGLtriangles*>(obj->item);
       lines = dynamic_cast<OGLlines*>(obj->item);
       points = dynamic_cast<OGLpoints*>(obj->item);
-      if (triangles) {
-        std::cout << "\t\treloading triangles\n";
-        triangles->clear();
-      }
-      if (lines) {
-        std::cout << "\t\treloading lines\n";
-        lines->clear();
-      }
-      if (points) {
-        std::cout << "\t\treloading points\n";
-        points->clear();
-      }
+      obj->item->clear();
     }
     else {
-      auto vectors = split_vectors(line_no_spaces);
+      auto vects = split_vectors(line_no_spaces);
       if(points) {
-        if(vectors.size() == 1)
-          points->addPoint(make_vector(vectors[0]), 3, vec3f{1.f,1.f,1.f});
-        else if (vectors.size() == 2)
-          points->addPoint(make_vector(vectors[0]), atof(vectors[1].c_str()), vec3f{ 1.f,1.f,1.f });
-        else if (vectors.size() == 3)
-          points->addPoint(make_vector(vectors[0]), atof(vectors[1].c_str()), make_vector(vectors[2]));
+        if(vects.size() == 1)
+          points->addPoint(make_vector(vects[0]), 3, vec3f{1.f,1.f,1.f});
+        else if (vects.size() == 2)
+          points->addPoint(make_vector(vects[0]), atof(vects[1].c_str()), vec3f{ 1.f,1.f,1.f });
+        else if (vects.size() == 3)
+          points->addPoint(make_vector(vects[0]), atof(vects[1].c_str()), make_vector(vects[2]));
       }
       if (lines) {
-        if(vectors.size() < 2)
+        if(vects.size() < 2)
           continue;
-        std::array<vec3f, 2> coords{make_vector(vectors[0]), make_vector(vectors[1])};
-        if (vectors.size() == 2)
+        std::array<vec3f, 2> coords{make_vector(vects[0]), make_vector(vects[1])};
+        if (vects.size() == 2)
           lines->addLine(coords, vec3f{1.f,1.f,1.f});
-        else if (vectors.size() == 3)
-          lines->addLine(coords, make_vector(vectors[2]));
+        else if (vects.size() == 3)
+          lines->addLine(coords, make_vector(vects[2]));
       }
       if (triangles) {
-        if (vectors.size() < 3)
+        if (vects.size() < 3)
           continue;
-        std::array<vec3f, 3> coords{ make_vector(vectors[0]), make_vector(vectors[1]), make_vector(vectors[2]) };
-        if (vectors.size() == 3)
+        std::array<vec3f, 3> coords{ make_vector(vects[0]), make_vector(vects[1]), make_vector(vects[2]) };
+        if (vects.size() == 3)
           triangles->addTriangle(coords, vec3f{ 1.f,1.f,1.f });
-        else if (vectors.size() == 4)
-          triangles->addTriangle(coords, make_vector(vectors[3]));
+        else if (vects.size() == 4)
+          triangles->addTriangle(coords, make_vector(vects[3]));
       }
     }
   }
