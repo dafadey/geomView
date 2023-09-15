@@ -12,13 +12,46 @@
 object::~object() {
   if(item)
     delete item;
-  while(children.size()) {
-    delete *children.begin();
-    children.erase(children.begin());
+  while(children().size()) {
+    delete *children().begin();
+    removeChild(*children().begin());
   }
 }
 
-int object::memory() {
+void object::addChild(object* c) {
+  m_children.push_back(c);
+  c->parent = this;
+}
+
+std::list<object*>::const_iterator object::addChild(std::list<object*>::const_iterator it, object* c) {
+  c->parent = this;
+  return m_children.insert(it, c);
+}
+
+void object::removeChild(object* c) {
+  m_children.remove(c);
+}
+
+void object::removeChild(std::list<object*>::const_iterator it) {
+  m_children.erase(it);
+}
+
+const std::list<object*>& object::children() const {
+  return m_children;
+}
+
+std::vector<std::string> object::fullName() const {
+  std::vector<std::string> s;
+  const object* o = this;
+  while(o->parent) {
+    s.push_back(o->name);
+    o=o->parent;
+  }
+  s.push_back(o->name);
+  return s;
+}
+
+int object::memory() const {
   int res{};
   if (item)
     res += item->memory();
@@ -28,7 +61,7 @@ int object::memory() {
 
 void object::setItemsVisible(bool setting)
 {
-  for(auto& c : children)
+  for(auto& c : children())
     c->setItemsVisible(setting);
   if(item)
     item->visible = setting;
@@ -53,13 +86,13 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
     if(line_no_spaces.empty())
       continue;
     auto tokens = split(line_no_spaces, ":");
-    if(tokens[0] == "triangles" || tokens[0] == "lines"  || tokens[0] == "vectors" || tokens[0] == "points") {
+    if(tokens[0] == "triangles" || tokens[0] == "lines"  || tokens[0] == "vectors" || tokens[0] == "points"|| tokens[0] == "control_points") {
       obj = new object();
       type = tokens[0];
       obj->item = newOGLitem(type);
       obj->item->init(ren);
       //ren->items.push_back(obj->item);
-      output->children.push_back(obj);
+      output->addChild(obj);
       obj->name = tokens.size() > 1 ? tokens[1] : "<noname>";
       triangles = nullptr;
       lines = nullptr;
@@ -72,6 +105,8 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
         lines = dynamic_cast<OGLvectors*>(obj->item);
       else if (type == "points")
         points = dynamic_cast<OGLpoints*>(obj->item);
+      else if (type == "control_points")
+        points = dynamic_cast<OGLControlPoints*>(obj->item);
     } else {
       auto vects = split_vectors(line_no_spaces);
       if(points) {
@@ -102,8 +137,8 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
       }
     }
   }
-  if(output->children.size()) {
-    obj_root->children.push_back(output);
+  if(output->children().size()) {
+    obj_root->addChild(output);
     return true;
   } else {
     delete output;
@@ -121,9 +156,9 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
   OGLlines* lines{};
   OGLpoints* points{};
   object* obj{};
-  auto last_found = in_obj->children.begin();
+  auto last_found = in_obj->children().begin();
   std::set<object*> objects_to_remove;
-  for(auto o : in_obj->children)
+  for(auto o : in_obj->children())
     objects_to_remove.insert(o);
   
   while (std::getline(ini, line)) {
@@ -131,11 +166,11 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
     if(line_no_spaces.empty())
       continue;
     auto tokens = split(line_no_spaces, ":");
-    if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "vectors" || tokens[0] == "points") {
+    if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "vectors" || tokens[0] == "points" || tokens[0] == "control_points") {
       std::cout << "working with " << tokens[1] << '\n';
       obj = nullptr;
       //super slow search with crazy string comparisons. who cares!
-      for(auto it = in_obj->children.begin(); it != in_obj->children.end(); it++) {
+      for(auto it = in_obj->children().begin(); it != in_obj->children().end(); it++) {
         object* o = *it;
         std::string o_type{};
         if(dynamic_cast<OGLtriangles*>(o->item))
@@ -146,6 +181,8 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
           o_type = "vectors";
         if(dynamic_cast<OGLpoints*>(o->item))
           o_type = "points";
+        if(dynamic_cast<OGLControlPoints*>(o->item))
+          o_type = "control_points";
           
         if(tokens.size() > 1 && o->name == tokens[1] && o_type == tokens[0]) { //groups with "unknown" name are skipped
           obj = o;
@@ -163,7 +200,7 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
         obj->item->init(ren);
         obj->name = tokens.size() > 1 ? tokens[1] : "<noname>";
         last_found++;
-        last_found = in_obj->children.insert(last_found, obj);
+        last_found = in_obj->addChild(last_found, obj);
       }
       std::cout << "\treloading gorup " << obj->name << '\n';
       triangles = dynamic_cast<OGLtriangles*>(obj->item);
@@ -205,12 +242,12 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
   for(auto o : objects_to_remove)
   {
     delete o;
-    in_obj->children.remove(o);
+    in_obj->removeChild(o);
   }
 }
 
 void reload(object* obj_root, renderer* ren) {
-  for(object* c : obj_root->children) {
+  for(object* c : obj_root->children()) {
     std::cout << "reloading file " << c->name << '\n';
     reload(c, c->name, ren);
   }

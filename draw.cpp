@@ -86,33 +86,57 @@ static GLuint loadShaders(const std::string& VertexShaderCode, const std::string
     return ProgramID;
 }
 
+static void getCamCoords(vec3f& cam_x, vec3f& cam_y, vec3f& cam_z, float& factor, const renderer* ren) {
+  cam_y = ren->cam_up;
+  normalize(cam_y);
+  cam_z = ren->cam_pos - ren->fp_pos;
+  factor = ren->parallel == false ? std::sqrt(cam_z * cam_z) : 1.f / ren->scale;
+  normalize(cam_z);
+  cam_x = cross_prod(cam_y, cam_z);
+}
+
+static void getWinGeo(float& winw, float& winh, const renderer* ren) // pixels
+{
+  int win_geo[2];
+  glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
+  winw = static_cast<float>(win_geo[0]);
+  winh = static_cast<float>(win_geo[1]);
+} 
+
+vec3f getD(GLFWwindow* window, const renderer* r) {
+
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    float winw, winh;
+    getWinGeo(winw, winh, r);
+    vec3f cam_x, cam_y, cam_z;
+    float factor;
+    getCamCoords(cam_x, cam_y, cam_z, factor, r);
+    
+    return cam_x * (xpos - r->xPressPos) / winw * 2.f * factor - cam_y * (ypos - r->yPressPos) / winw * 2.f * factor;
+}
+
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
   renderer* ren = (renderer*) glfwGetWindowUserPointer(window);
   if (ren->nocallbacks)
     return;
 
   if(ren->mouse_state == renderer::e_mouse_state::PAN) {
-    int win_geo[2];
-    glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
-    float winw = static_cast<float>(win_geo[0]);
-    float winh = static_cast<float>(win_geo[1]);
+    float winw, winh;
+    getWinGeo(winw, winh, ren);
+    vec3f cam_x, cam_y, cam_z;
+    float factor;
+    getCamCoords(cam_x, cam_y, cam_z, factor, ren);
 
-    vec3f cam_y = ren->cam_up;
-    normalize(cam_y);
-    vec3f cam_z = ren->cam_pos - ren->fp_pos;
-    float factor = ren->parallel == false ? std::sqrt(cam_z * cam_z) : 1.f / ren->scale;
-    normalize(cam_z);
-    vec3f cam_x = cross_prod(cam_y, cam_z);
-    ren->cam_pos = ren->cam_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw*2.f * factor;
-    ren->fp_pos = ren->fp_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw*2.f * factor;
+    ren->cam_pos = ren->cam_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw * 2.f * factor;
+    ren->fp_pos = ren->fp_pos + (cam_y * (ypos-ren->mouse_pos[1]) - cam_x * (xpos - ren->mouse_pos[0])) / winw * 2.f * factor;
   }
 
   if(ren->mouse_state == renderer::e_mouse_state::ROTATE) {
-    vec3f cam_y = ren->cam_up;
-    normalize(cam_y);
-    vec3f cam_z = ren->cam_pos - ren->fp_pos;
-    normalize(cam_z);
-    vec3f cam_x = cross_prod(cam_y, cam_z);
+    vec3f cam_x, cam_y, cam_z;
+    float factor;
+    getCamCoords(cam_x, cam_y, cam_z, factor, ren);
+
     vec3f cam_pos_rel = ren->cam_pos - ren->fp_pos;
 
     cam_pos_rel = vec3f{cam_pos_rel * cam_x, cam_pos_rel * cam_y, cam_pos_rel * cam_z};
@@ -130,6 +154,16 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     ren->cam_pos = cross_prod(ren->cam_up, cross_prod(ren->cam_pos, ren->cam_up));
     ren->cam_pos = ren->cam_pos + ren->fp_pos;
 
+  }
+
+  if(ren->mouse_state == renderer::e_mouse_state::SELECT_DRAG) {
+    vec3f d = getD(window, ren);
+    const object* obj = std::get<0>(ren->selectionResults.back());
+    size_t item_id = std::get<2>(ren->selectionResults.back());
+    for(int i=0; i<3; i++)
+      obj->item->VBOdata[item_id * obj->item->VBOstride() + i] = ren->selectedPointPos0[i] + d[i];
+    obj->item->VBOdata[item_id * obj->item->VBOstride() + 3] = ren->selectedPointRadius * 1.3f;
+    obj->item->vboCopied=false;
   }
   
   ren->mouse_pos[0] = xpos;
@@ -151,28 +185,37 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
 
 }
 
-static void select_object(const object* obj, const renderer* ren, std::vector<std::pair<const object*, GLfloat>>& res) 
-{
+static void select_object(const object* obj, const renderer* ren, std::vector<std::tuple<const object*, GLfloat, size_t>>& res, bool onlyControlPoints) {
   int win_geo[2];
   glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
   vec2f pos{(GLfloat) ren->mouse_pos[0] / (GLfloat) win_geo[0], -(GLfloat) ren->mouse_pos[1] / (GLfloat) win_geo[1]};
   pos = 2.f * (pos - vec2f{.5f, -.5f});
   //std::cout << "pos=(" << pos[0] << ", " << pos[1] << ")\n";
-  for(auto& co : obj->children)
-    select_object(co, ren, res);
+  for(auto& co : obj->children()) {
+    if(co->visible)
+      select_object(co, ren, res, onlyControlPoints);
+  }
   if(!obj->item)
     return;
+  if(onlyControlPoints && !obj->item->isControlPoints())
+    return;
   GLfloat minDist2 = 13.0f;
-  for(int i=0; i<obj->item->VBOdata.size(); i+=obj->item->VBOstride())
+  size_t id = 0;
+  size_t minId=-1;
+  for(size_t i=0; i<obj->item->VBOdata.size(); i+=obj->item->VBOstride())
   {
     vec3f pt{obj->item->VBOdata[i], obj->item->VBOdata[i+1], obj->item->VBOdata[i+2]};
     //std::cout << "pt=(" << pt[0] << ", " << pt[1] << ", " << pt[2] << ")\n";
     vec2f p = ren->project(pt);
     //std::cout << "p=(" << p[0] << ", " << p[1] << ")\n";
     GLfloat dist2 = (p - pos) * (p - pos);
-    minDist2 = std::min(dist2, minDist2);
+    if(dist2 < minDist2) {
+      minDist2 = dist2;
+      minId = id;
+    }
+    id++;
   }
-  res.push_back(std::make_pair(obj,minDist2));
+  res.push_back(std::make_tuple(obj,minDist2,minId));
   //std::cout << "obj: " << obj->name << " minDist2=" << minDist2 << '\n';
 }
 
@@ -198,18 +241,26 @@ vec2f renderer::project(const vec3f& pt) const {
   return vec2f{o[0], o[1]};
 }
 
-std::vector<std::pair<const object*, GLfloat>> renderer::select() const {
-  std::vector<std::pair<const object*, GLfloat>> res;
+void renderer::select(bool onlyControlPoints) const {
   std::cout << "select\n";
-  select_object(obj, this, res);
-  std::sort(res.begin(), res.end(), [](const std::pair<const object*, GLfloat>& a, const std::pair<const object*, GLfloat>& b) {return a.second > b.second;});
-  for(const auto& it : res)
-    std::cout << it.first->name << " : " << it.second << '\n';
-  return res;
+  selectionResults.clear();
+  select_object(obj, this, selectionResults, onlyControlPoints);
+  std::sort(selectionResults.begin(), selectionResults.end(), [](const std::tuple<const object*, GLfloat, size_t>& a, const std::tuple<const object*, GLfloat, size_t>& b) {return std::get<1>(a) > std::get<1>(b);});
+  for(const auto& it : selectionResults) {
+    auto fullname = std::get<0>(it)->fullName();
+    auto itt = fullname.end();
+    itt--;
+    for(; itt != fullname.begin(); itt--)
+      std::cout << *itt << ':';
+    std::cout << *itt << ':' << std::get<2>(it);
+    
+    std::cout << " : " << std::get<1>(it) << '\n';
+  }
 }
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
   renderer* r = (renderer*)glfwGetWindowUserPointer(window);
+  
   if (r->nocallbacks)
     return;
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
@@ -218,9 +269,37 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
     r->mouse_state = renderer::e_mouse_state::PAN;
 
-  if (action == GLFW_RELEASE)
-    r->mouse_state = renderer::e_mouse_state::HOVER;
+  if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+    r->mouse_state = renderer::e_mouse_state::SELECT_DRAG;
+    r->select(true);
+    const object* obj = std::get<0>(r->selectionResults.back());
+    size_t item_id = std::get<2>(r->selectionResults.back());
+    r->selectedPointRadius = obj->item->VBOdata[item_id * obj->item->VBOstride() + 3];
+    obj->item->VBOdata[item_id * obj->item->VBOstride() + 3] = r->selectedPointRadius * 1.5f;
+    obj->item->vboCopied = false;
+    for(int i=0; i<3; i++)
+      r->selectedPointPos0[i] = obj->item->VBOdata[item_id * obj->item->VBOstride() + i];
+    glfwGetCursorPos(window, &(r->xPressPos), &(r->yPressPos));
+  }
 
+  if (action == GLFW_RELEASE) {
+    if(r->mouse_state == renderer::e_mouse_state::SELECT_DRAG) {
+      const object* obj = std::get<0>(r->selectionResults.back());
+      size_t item_id = std::get<2>(r->selectionResults.back());
+      vec3f d = getD(window, r);
+      for(int i=0; i<3; i++)
+        obj->item->VBOdata[item_id * obj->item->VBOstride() + i] = r->selectedPointPos0[i]+d[i];
+      obj->item->VBOdata[item_id * obj->item->VBOstride() + 3] = r->selectedPointRadius;
+      obj->item->vboCopied=false;
+      if(r->controlPointMoved) {
+        auto sId = obj->fullName();
+        sId.push_back(std::to_string(item_id));
+        (*r->controlPointMoved)(r->callbackData, sId, r->selectedPointPos0[0]+d[0], r->selectedPointPos0[1]+d[1], r->selectedPointPos0[2]+d[2]);
+      }
+    }
+    r->mouse_state = renderer::e_mouse_state::HOVER;
+  }
+  
   if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
     r->select();
   }
@@ -269,7 +348,7 @@ void renderer::set_callbacks(GLFWwindow* window) {
 static void iterate_collect_items(std::vector<OGLitem*>& items, const object* obj) {
   if(!obj->visible)
     return;
-  for (auto& child : obj->children)
+  for (auto& child : obj->children())
     iterate_collect_items(items, child);
   if(obj->item && obj->item->visible)
     items.push_back(obj->item);

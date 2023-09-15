@@ -18,7 +18,7 @@ class GLFWwindow;
 struct object;
 
 struct renderer {
-  enum e_mouse_state{HOVER, ROTATE, PAN, ZOOM, SELECT};
+  enum e_mouse_state{HOVER, ROTATE, PAN, ZOOM, SELECT_DRAG};
     
   object* obj{};
 
@@ -51,7 +51,7 @@ struct renderer {
   
   vec2f project(const vec3f&) const;
   
-  std::vector<std::pair<const object*, GLfloat>> select() const;
+  void select(bool onlyControlPoints = false) const;
 
   void set_callbacks(GLFWwindow* window);
   
@@ -66,6 +66,14 @@ struct renderer {
   bool parallel=true;
   
   std::array<GLfloat, 3> bg_color {.3, .3, .3};
+  
+  void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
+  void* callbackData {nullptr};
+
+  mutable std::vector<std::tuple<const object*, GLfloat, size_t>> selectionResults;
+  mutable float selectedPointRadius{.0f};
+  mutable vec3f selectedPointPos0;
+  mutable double xPressPos, yPressPos;
 
 };
 

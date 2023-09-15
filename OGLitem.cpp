@@ -17,6 +17,10 @@ static std::array<float, 2> getAspect(renderer* ren) {
   return aspect;
 }
 
+bool OGLitem::isControlPoints() const {
+  return dynamic_cast<const OGLControlPoints*>(this);
+}
+
 OGLitem::OGLitem() : vao(0), VBO(0), shader(0) {}
 
 OGLitem::~OGLitem() {
@@ -26,7 +30,7 @@ OGLitem::~OGLitem() {
     glDeleteVertexArrays(1, &vao);
 }
 
-int OGLitem::memory() {
+int OGLitem::memory() const {
   return VBOdata.size() * sizeof(GLfloat);
 }
 
@@ -43,6 +47,8 @@ OGLitem* newOGLitem(const std::string& type) {
     return new OGLvectors();
   } else if (type == "points") {
     return new OGLpoints();
+  } else if (type == "control_points") {
+    return new OGLControlPoints();
   } else {
     std::cout << "newOGLitem: unknown type " << type << '\n';
     return nullptr;
@@ -363,6 +369,25 @@ void OGLpoints::init(renderer* ren_) {
   glBindVertexArray(0);
 }
 
+
+void OGLControlPoints::init(renderer* ren_) {
+  OGLpoints::init(ren_);
+  if (vao) {
+    glBindVertexArray(vao);
+    shader = ren->getShader("sha_circle.vs", "sha.fs", "sha_cp.gs");
+    verts_location = glGetAttribLocation(shader, "point_pos");
+    radii_location = glGetAttribLocation(shader, "radius");
+    colors_location = glGetAttribLocation(shader, "point_color");
+
+    proj_matrix_location = glGetUniformLocation(shader, "proj_matrix");
+    view_matrix_location = glGetUniformLocation(shader, "view_matrix");
+    aspect_location = glGetUniformLocation(shader, "aspect");
+    glBindVertexArray(0);
+  } else
+    std::cout << "failed to get vao\n";
+}
+
+
 GLuint OGLpoints::VBOstride() const {
   return 7;
 }
@@ -436,3 +461,4 @@ void OGLpoints::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_
   glBindVertexArray(0);
   glUseProgram(0);
 }
+

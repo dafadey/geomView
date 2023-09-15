@@ -5,7 +5,7 @@
 #include <array>
 #include <cfloat>
 #include "vectors.h"
-
+struct object;
 struct renderer;
 
 struct OGLitem {
@@ -35,7 +35,9 @@ struct OGLitem {
   GLint aspect_location{};
 
   bool vboCopied{};
-  int memory();
+  int memory() const;
+  bool isControlPoints() const;
+
 };
 
 OGLitem* newOGLitem(const std::string& type);
@@ -81,4 +83,8 @@ struct OGLpoints : public OGLitem {
 
   GLint radii_location{};
   GLint points_count{};
+};
+
+struct OGLControlPoints : public OGLpoints {
+  virtual void init(renderer* ren) override;
 };

@@ -48,7 +48,7 @@ void addRecentFile(const std::string& file)
 namespace ImGui {
 
   bool DoObject(object* obj) {
-    if (obj->children.size()) {
+    if (obj->children().size()) {
       if (ImGui::TreeNode(obj->name.c_str())) {
         if(Button(obj->visible ? "untick" : "tick"))
           obj->setItemsVisible(!obj->visible);
@@ -61,16 +61,16 @@ namespace ImGui {
           return false;
         }
 
-        std::list<object*>::iterator it = obj->children.begin();
-        std::vector<std::list<object*>::iterator> to_erase;
-        while (it != obj->children.end()) {
+        std::list<object*>::const_iterator it = obj->children().begin();
+        std::vector<std::list<object*>::const_iterator> to_erase;
+        while (it != obj->children().end()) {
           if(!DoObject(*it))
             to_erase.push_back(it);
           it++;
         }
         for(auto& it : to_erase) {
           delete *it;
-          obj->children.erase(it);
+          obj->removeChild(it);
         }
         ImGui::TreePop();
       }
