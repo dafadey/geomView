@@ -11,6 +11,7 @@ struct geom_view {
   void* callbackData {nullptr};
   
   void init(const std::string& filename);
+  void init(const std::vector<std::string>& filenames);
   void reload();
   void setCallBack(void*, void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z));
 };

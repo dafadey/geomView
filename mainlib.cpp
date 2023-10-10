@@ -7,7 +7,7 @@
 #include "geom_view.h"
 #include "imgui_controls.h"
 
-static void thread_func(geom_view* gv, std::string filename) {
+static void thread_func(geom_view* gv, std::vector<std::string> filenames) {
   imgui_interface iface;
   iface.init();
     
@@ -20,9 +20,11 @@ static void thread_func(geom_view* gv, std::string filename) {
   ren.controlPointMoved = gv->controlPointMoved;
   ren.callbackData = gv->callbackData;
   
-  if(!filename.empty())
-    load_objects(gv->obj_root, filename.c_str(), &ren);
- 
+  for(const auto& filename : filenames) {
+    if(!filename.empty())
+      load_objects(gv->obj_root, filename.c_str(), &ren);
+  }
+
   ren.reset_camera();
 
   glfwSetWindowUserPointer(iface.window, (void*) &ren);
@@ -68,8 +70,15 @@ static void thread_func(geom_view* gv, std::string filename) {
   iface.close();
 }
 
+void geom_view::init(const std::vector<std::string>& filenames) {
+  std::thread th(thread_func, this, filenames);
+  th.detach();
+}
+
 void geom_view::init(const std::string& filename) {
-  std::thread th(thread_func, this, filename);
+  std::vector<std::string> filenames;
+  filenames.push_back(filename);
+  std::thread th(thread_func, this, filenames);
   th.detach();
 }
 
