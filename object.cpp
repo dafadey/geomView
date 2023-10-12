@@ -146,7 +146,7 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
   }
 }
 
-static void reload(object* in_obj, std::string& filename, renderer* ren) {
+static bool reload(object* in_obj, std::string& filename, renderer* ren) {
   std::ifstream ini(filename.c_str());
   std::string line;
 
@@ -158,6 +158,8 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
   object* obj{};
   auto last_found = in_obj->children().begin();
   std::set<object*> objects_to_remove;
+  if(!in_obj->children().size())
+    return false;
   for(auto o : in_obj->children())
     objects_to_remove.insert(o);
   
@@ -244,11 +246,16 @@ static void reload(object* in_obj, std::string& filename, renderer* ren) {
     delete o;
     in_obj->removeChild(o);
   }
+  return true;
 }
 
 void reload(object* obj_root, renderer* ren) {
+  std::vector<object*> children_to_remove;
   for(object* c : obj_root->children()) {
     std::cout << "reloading file " << c->name << '\n';
-    reload(c, c->name, ren);
+    if(!reload(c, c->name, ren))
+      children_to_remove.push_back(c);
   }
+  for(auto c : children_to_remove)
+    obj_root->removeChild(c);
 }
