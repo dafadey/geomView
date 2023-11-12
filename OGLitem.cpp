@@ -114,7 +114,7 @@ void OGLtriangles::copyVBOtoDevice() {
 
   timer tim("OGLsurface::update_model time is");
   if (VBO == 0) {
-    std::cerr << "cannot update model - VBO is not generated, call init() for renderer\n";
+    std::cerr << "OGLtriangles::cannot update model - VBO is not generated, call init() for renderer\n";
     return;
   }
 
@@ -201,7 +201,7 @@ void OGLlines::init(renderer* ren_) {
     if (vao)
       glBindVertexArray(vao);
     else
-      std::cout << "failed to get vao\n";
+      std::cout << "failed to get vao err#"<< glGetError() << "\n";
   }
   else
     std::cout << "WARNING: VAO is already initialized to " << vao << '\n';
@@ -256,7 +256,7 @@ void OGLlines::copyVBOtoDevice() {
 
   timer tim("OGLsurface::update_model time is");
   if (VBO == 0) {
-    std::cerr << "cannot update model - VBO is not generated, call init() for renderer\n";
+    std::cerr << "OGLlines::cannot update model - VBO is not generated, call init() for renderer\n";
     return;
   }
 
@@ -398,7 +398,7 @@ void OGLpoints::copyVBOtoDevice() {
 
   timer tim("OGLsurface::update_model time is");
   if (VBO == 0) {
-    std::cerr << "cannot update model - VBO is not generated, call init() for renderer\n";
+    std::cerr << "OGLpoints::cannot update model - VBO is not generated, call init() for renderer\n";
     return;
   }
 

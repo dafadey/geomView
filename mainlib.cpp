@@ -83,6 +83,7 @@ void geom_view::init(const std::string& filename) {
 }
 
 void geom_view::reload() {
+  glfwMakeContextCurrent(ren_ptr->win); // typically calling thread differs from one that creates geomView main window so to make GL functions work properly we have to set current GL context to one created during main window creation. 
   ::reload(obj_root, ren_ptr);
 }
 

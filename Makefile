@@ -9,8 +9,10 @@ OBJS := $(SOURCES:%=%.o) $(SOURCES_IMGUI:%=%.o)
 
 ifeq "$(OS)" "Windows_NT"
 	libs := -lopengl32 -lglew32 -lglfw3 -lgdi32
+	soext := dll
 else
 	libs := -lGL -lGLEW -lglfw -lrt -lm -ldl
+	soext := so
 endif
 
 all : $(TARGET_EXEC) $(TARGET_LIB)
@@ -19,7 +21,7 @@ $(TARGET_EXEC): imgui $(OBJS) main.cpp.o
 	g++ -g -fPIC main.cpp.o $(OBJS) -o $@ $(libs) 
 
 $(TARGET_LIB): imgui $(OBJS) mainlib.cpp.o
-	g++ -g -fPIC -shared mainlib.cpp.o $(OBJS) -o $@.so $(libs) 
+	g++ -g -fPIC -shared mainlib.cpp.o $(OBJS) -o $@.$(soext) $(libs) 
 
 %.cpp.o: %.cpp
 	g++ -g -fPIC -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends -c $< -o $@
@@ -37,4 +39,4 @@ clean:
 	rm -f `ls imgui/*.o`
 	rm -f `ls imgui/backends/*.o`
 	rm -f $(TARGET_EXEC)
-	rm -f $(TARGET_LIB).so
+	rm -f $(TARGET_LIB).$(soext)
