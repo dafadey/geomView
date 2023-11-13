@@ -467,29 +467,38 @@ void renderer::render() {
 }
 
 GLuint renderer::getShader(const std::string& vs_name, const std::string& fs_name, const std::string& gs_name) {
+  #include "shaderRAMfs.cpp.inl"
   GLuint shader;
   auto it = shaders.find(std::array<std::string,3>{vs_name, fs_name, gs_name});
   if(it == shaders.end()) {
     std::stringstream vs;
     std::stringstream gs;
     std::stringstream fs;
-    std::ifstream ivs(vs_name.c_str());
-    vs << ivs.rdbuf();
-    ivs.close();
-    if(!gs_name.empty()) {
-      std::ifstream igs(gs_name.c_str());
-      gs << igs.rdbuf();
-      igs.close();
-    }
-    std::ifstream ifs(fs_name);
-    fs << ifs.rdbuf();
-    ifs.close();
+    
+    auto readFromSomewhere=[](std::stringstream& ss, const std::string& f_name) {
+      if(f_name.empty())
+        return;
+      auto itt = shaderRAMfs.find(f_name);
+      if(itt != shaderRAMfs.end())
+        ss << itt->second;
+      else {
+        std::ifstream inf(f_name.c_str());
+        ss << inf.rdbuf();
+        inf.close();
+      }
+    };
+    
+    readFromSomewhere(gs, gs_name);
+    readFromSomewhere(vs, vs_name);
+    readFromSomewhere(fs, fs_name);
 
     shader = loadShaders(vs.str(), fs.str(), gs.str());
+
     if(!shader) {
       std::cerr << "load shaders failed\n";
       return false;
     }
+
     shaders[std::array<std::string,3>{vs_name, fs_name, gs_name}] = shader;
     return shader;
   } else

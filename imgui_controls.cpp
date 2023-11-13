@@ -32,16 +32,17 @@ static std::filesystem::path path = std::filesystem::current_path();
 
 void addRecentFile(const std::string& file)
 {
-  for(const auto& fl : mainwin_conf.recent_files)
+  for(const auto& fl : mainwin_conf.recent_files) {
     if(file == fl)
       return;
+  }
   if(mainwin_conf.recent_files.size() < MAXRECENT)
     mainwin_conf.recent_files.push_back(file);
   else {
     int i=1;
     for(;i<mainwin_conf.recent_files.size();i++)
       mainwin_conf.recent_files[i-1] = mainwin_conf.recent_files[i];
-    mainwin_conf.recent_files[i] = file;
+    mainwin_conf.recent_files[i-1] = file;
   }
 }
 
