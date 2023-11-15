@@ -23,10 +23,10 @@ endif
 
 all : $(TARGET_EXEC) $(TARGET_LIB)
 
-$(TARGET_EXEC): imgui $(OBJS) obj/main.o shaderRAMfs.cpp.inl | obj
+$(TARGET_EXEC): $(OBJS) obj/main.o shaderRAMfs.cpp.inl | obj
 	g++ -g -fPIC obj/main.o $(OBJS) -o $@ $(libs) 
 
-$(TARGET_LIB): imgui $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl  | obj
+$(TARGET_LIB): $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl  | obj
 	g++ -g -fPIC -shared obj/mainlib.o $(OBJS) -o $@.$(soext) $(libs) 
 	ar rcs -o $@.a obj/mainlib.o $(OBJS)
 
@@ -44,14 +44,14 @@ obj :
 	mkdir obj/imgui
 	mkdir obj/imgui/backends
 
-obj/Makefile.deps : shaderRAMfs.cpp.inl | obj
+obj/Makefile.deps : shaderRAMfs.cpp.inl | obj imgui
 	@bash gendeps.sh $(SOURCES_ALL) main.cpp mainlib.cpp
 
 .PHONY: imgui
 imgui:
 	@if [ ! -d $@ ] ; then \
 		echo cloning imgui ; \
-		git clone -b v1.86 https://github.com/ocornut/imgui ; \
+		git clone --depth=1 -b v1.86 https://github.com/ocornut/imgui ; \
 	fi
 
 .PHONY: clean

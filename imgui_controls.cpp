@@ -97,7 +97,6 @@ namespace ImGui {
       reload(obj, ren);
     if (BeginPopupModal("open file", NULL, ImGuiWindowFlags_None)) {
       static int selected=-1;
-      //static std::filesystem::path selected_file;
       static std::string selected_file;
       int items_in_dir=0;
 
@@ -164,6 +163,8 @@ namespace ImGui {
           if(load_objects(obj, selected_file, ren))
             addRecentFile(selected_file);
           CloseCurrentPopup();
+          if(obj->children().size() == 1)
+            ren->reset_camera();
         }
       }
       EndPopup();
