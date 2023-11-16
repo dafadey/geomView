@@ -85,7 +85,7 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
     auto line_no_spaces = remove_chars(remove_chars(remove_chars(remove_chars(line, ' '),'\t'),char(10)),char(13));
     if(line_no_spaces.empty())
       continue;
-    auto tokens = split(line_no_spaces, ":");
+    auto tokens = split(line_no_spaces, std::string(":"));
     if(tokens[0] == "triangles" || tokens[0] == "lines"  || tokens[0] == "vectors" || tokens[0] == "points"|| tokens[0] == "control_points") {
       obj = new object();
       type = tokens[0];
@@ -167,7 +167,7 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
     auto line_no_spaces = remove_chars(remove_chars(remove_chars(remove_chars(line, ' '),'\t'),char(10)),char(13));
     if(line_no_spaces.empty())
       continue;
-    auto tokens = split(line_no_spaces, ":");
+    auto tokens = split(line_no_spaces, std::string(":"));
     if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "vectors" || tokens[0] == "points" || tokens[0] == "control_points") {
       std::cout << "working with " << tokens[1] << '\n';
       obj = nullptr;

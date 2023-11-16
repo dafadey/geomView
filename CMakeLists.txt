@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(geom_view_Project)
 
 include(ExternalProject)
@@ -8,6 +8,9 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/imgui")
   execute_process(COMMAND git clone --depth=1 -b v1.86 https://github.com/ocornut/imgui
                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
+
+set (CMAKE_CXX_STANDARD 17)
+
 
 set(imgui_sources imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp) 
 
@@ -23,11 +26,18 @@ set(execTarget "geom_view")
 set(libTarget "geom_view_st")
 set(dylibTarget "geom_view_dyn")
 
+if(WIN32)
+  set(opts /DNOIMPLOT)
+else()
+  set(opts -fPIC -g -O3 -DNOIMPLOT)
+endif()
+
+message("opts ${opts}")
+add_compile_options(${opts})
+
 add_executable(${execTarget} ${sources_exec})
 add_library(${libTarget} STATIC ${sources_lib})
 add_library(${dylibTarget} SHARED ${sources_lib})
-
-set(opts -fPIC --std=c++17 -g -O3 -DNOIMPLOT)
 
 add_library(commonArch STATIC ${common_sources})
 
@@ -43,31 +53,37 @@ add_custom_command(OUTPUT shaderRAMfs.cpp.inl
                    DEPENDS codegen ${shaders}
                    VERBATIM)
 
-target_compile_options(commonArch PUBLIC ${opts})
-target_compile_options(${execTarget} PUBLIC ${opts})
-target_compile_options(${libTarget} PUBLIC ${opts})
-target_compile_options(${dylibTarget} PUBLIC ${opts})
-
-target_include_directories(commonArch PUBLIC imgui imgui/backends)
-target_include_directories(${execTarget} PUBLIC imgui imgui/backends)
-target_include_directories(${libTarget} PUBLIC imgui imgui/backends)
-target_include_directories(${dylibTarget} PUBLIC imgui imgui/backends)
-
 set(OpenGL_GL_PREFERENCE LEGACY)
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
+message("GLEW: ${GLEW_INCLUDE_DIR}")
+message("glfw3: ${glfw3_DIR}")
 
-target_link_libraries(${execTarget} PUBLIC commonArch OpenGL glfw GLEW -lrt -lm -ldl)
-target_link_libraries(${dylibTarget} PUBLIC commonArch OpenGL glfw GLEW -lrt -lm -ldl)
+#unfortunatelly lgfw3 does not set glfw3_INCLUDE_DIR so we have to find
+if(NOT DEFINED ${glfw3_INCLUDE_DIR})
+  if(EXISTS "${glfw3_DIR}/../../../include/GLFW")
+    set(glfw3_INCLUDE_DIR "${glfw3_DIR}/../../../include")
+  endif()
+  if(EXISTS "${glfw3_DIR}/../../include/GLFW")
+    set(glfw3_INCLUDE_DIR "${glfw3_DIR}/../../include")
+  endif()
+endif()
+
+message("glfw3_INCLUDE_DIR: ${glfw3_INCLUDE_DIR}")
+
+include_directories(imgui imgui/backends ${GLEW_INCLUDE_DIR} ${glfw3_INCLUDE_DIR})
+
+target_link_libraries(${execTarget} PUBLIC commonArch ${OPENGL_LIBRARIES} glfw ${GLEW_LIBRARIES})
+target_link_libraries(${dylibTarget} PUBLIC commonArch ${OPENGL_LIBRARIES} glfw ${GLEW_LIBRARIES})
+
+message("OpenGL libraries:=${OPENGL_LIBRARIES}")
 
 if(WIN32)
-    target_link_libraries(${execTarget} PUBLIC -lgdi32)
-    target_link_libraries(${dylibTarget} PUBLIC -lgdi32)
-endif(WIN32)
-
-if(UNIX)
+    target_link_libraries(${execTarget} PUBLIC gdi32.lib)
+    target_link_libraries(${dylibTarget} PUBLIC gdi32.lib)
+else()
     target_link_libraries(${execTarget} PUBLIC -lrt -lm -ldl)
     target_link_libraries(${dylibTarget} PUBLIC -lrt -lm -ldl)
-endif(UNIX)
+endif()

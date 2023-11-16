@@ -26,6 +26,12 @@ static void _update_camera(const vec3f& dir, const vec3f& up, renderer* ren) {
 
 static std::filesystem::path path = std::filesystem::current_path();
 
+std::string SFW(const std::wstring& in) {
+  char tmp[113];
+  std::wcstombs(tmp, in.c_str(), 111);
+  return std::string(tmp);
+}
+
 #ifndef MAXRECENTS
 #define MAXRECENT 13
 #endif
@@ -97,16 +103,16 @@ namespace ImGui {
       reload(obj, ren);
     if (BeginPopupModal("open file", NULL, ImGuiWindowFlags_None)) {
       static int selected=-1;
-      static std::string selected_file;
+      static std::wstring selected_file;
       int items_in_dir=0;
 
       #ifdef WIN32
-      const std::string path_delimiter = "\\";
+      const std::wstring path_delimiter = L"\\";
       #else
-      const std::string path_delimiter = "/";
+      const std::wstring path_delimiter = L"/";
       #endif
-      auto dirs = split(path.string(), path_delimiter);
-      std::stringstream newpath{};
+      auto dirs = split(path.wstring(), path_delimiter);
+      std::wstringstream newpath{};
       #ifndef WIN32
       newpath << '/';
       #endif
@@ -115,42 +121,48 @@ namespace ImGui {
         if (d.empty())
           continue;
         newpath << d << path_delimiter;
-        if(Button(d.c_str())) {
+        if(Button(SFW(d).c_str())) {
           selected = -1;
           break;
         }
         SameLine();
       }
-      newpath >> path;
+      path = newpath.str();
       Text("");
-      std::vector<std::pair<std::string, bool>> pathes;
+      std::vector<std::pair<std::wstring, bool>> pathes;
+      
       for (auto const& dir_entry : std::filesystem::directory_iterator(path))
-        pathes.push_back(std::make_pair(dir_entry.path().filename().string(), std::filesystem::is_directory(dir_entry)));
+        pathes.push_back(std::make_pair(dir_entry.path().filename().wstring(), std::filesystem::is_directory(dir_entry)));
 
-      std::stable_sort(pathes.begin(), pathes.end(), [](const std::pair<std::string, bool>& a, const std::pair<std::string, bool>& b)->bool {
-        if(a.second == b.second)
-          return a.first < b.first;
-        return a.second && !b.second;
-      });
+      for(const auto& p : pathes)
+      std::stable_sort(pathes.begin(), pathes.end(), [](const std::pair<std::wstring, bool>& a, const std::pair<std::wstring, bool>& b)->bool {
+                                                        if(a.second == b.second)
+                                                          return SFW(a.first) < SFW(b.first); // inefficient but valgrind complains on that otherwise (most likelly false positive but annoying anyways)
+                                                        return a.second && !b.second;
+                                                      });
+
+      std::vector<std::string> strings;
+      for (const auto& p : pathes)
+        strings.push_back(SFW(p.first));
 
       std::vector<const char*> cstrings;
-      for (const auto& p : pathes)
-        cstrings.push_back(p.first.c_str());
-      
+      for (const auto& p : strings)
+        cstrings.push_back(p.c_str());
+            
       if (ListBox(" ", &selected, cstrings.data(), cstrings.size(), 22)) {
         if (selected != -1) {
           if(pathes[selected].second) {
-            newpath.clear();
-            auto dirs = split((path.string() + pathes[selected].first).c_str(), path_delimiter);
+            newpath.str(L"");
+            auto dirs = split(path.wstring() + pathes[selected].first, path_delimiter);
             for (auto d : dirs) {
               if (d.empty())
                 continue;
               newpath << d << path_delimiter;
             }
-            newpath >> path;
+            path = newpath.str();
             selected = -1;
           } else
-            selected_file = path.string()+pathes[selected].first;
+            selected_file = path.wstring() + pathes[selected].first;
         } 
       }
       
@@ -159,9 +171,9 @@ namespace ImGui {
       SameLine();
       if(selected != -1) {
         if(Button("open")) {
-          std::cout << "opening " << selected_file << '\n';
-          if(load_objects(obj, selected_file, ren))
-            addRecentFile(selected_file);
+          std::cout << "opening " << SFW(selected_file) << '\n';
+          if(load_objects(obj, SFW(selected_file), ren))
+            addRecentFile(SFW(selected_file));
           CloseCurrentPopup();
           if(obj->children().size() == 1)
             ren->reset_camera();
