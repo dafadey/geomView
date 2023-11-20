@@ -13,7 +13,7 @@
 #include "OGLitem.h"
 #include "vectors.h"
 
-class GLFWwindow;
+struct GLFWwindow;
 
 struct object;
 
