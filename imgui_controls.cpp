@@ -52,6 +52,66 @@ void addRecentFile(const std::string& file)
   }
 }
 
+bool match(const std::string& s, const std::vector<std::string>& filter) {
+  //*a?b
+  //sdkasdflnbsd
+  bool total_res = false;  
+  for(const auto& f : filter) {
+    if(f.empty())
+      continue;
+    int i=0;
+    int j=0;
+    int j0 = f[0] == '*' ? 0 : -1;
+    bool result=false;
+    while(true) {
+      if(s[i] == f[j]) {
+        i++;
+        j++;
+      } else {
+        if(j0>=0 && f[j0] == '*' && j==j0+1) {
+          i++;
+        } else if(f[j] == '?') {
+          i++;
+          j++;
+        } else
+          j =std::min(j0 + 1, (int) f.size() - 1);
+      }
+      if(j==0 && i==0 && f[0] != '*') {
+        result = false;
+        break;
+      }
+      if(j == f.size() && i == s.size()) {
+        result = true;
+        break;
+      }
+      if(i == s.size()) {
+        result = false;
+        break;
+      }
+
+      if(f[j] == '*') {
+        j0=j;
+        j++;
+        if(j == f.size()) {
+          result = true;
+          break;
+        }
+      }
+    }
+    total_res |= result;
+  }
+  return total_res;
+}
+
+bool searchByFirstLettersNoCase(const std::string& s, const std::string& highlightMask) {
+  for(int i=0; i<std::min(s.size(), highlightMask.size()); i++) {
+    if(s[i] != highlightMask[i] && s[i] != highlightMask[i] + 32) {
+      return false;
+    }
+  }
+  return true;
+}
+
 namespace ImGui {
 
   bool DoObject(object* obj) {
@@ -99,13 +159,15 @@ namespace ImGui {
     if (mainwin_conf.recent_files.size() && Button("recent"))
       OpenPopup("open recent");
     SameLine();
+    
     if(Button("reload"))
       reload(obj, ren);
     if (BeginPopupModal("open file", NULL, ImGuiWindowFlags_None)) {
       static int selected=-1;
+      static std::string highlightMask="";
       static std::wstring selected_file;
       int items_in_dir=0;
-
+      
       #ifdef WIN32
       const std::wstring path_delimiter = L"\\";
       #else
@@ -125,16 +187,23 @@ namespace ImGui {
           selected = -1;
           break;
         }
+        if(dir_id + 2 == dirs.size())
+          continue;
         SameLine();
       }
       path = newpath.str();
-      Text("");
+      static char filter[128]="*";
+      bool listenToFirstLetters = true;
+      if(InputText("filter", filter, IM_ARRAYSIZE(filter)))
+        listenToFirstLetters = false;
+      Text(!highlightMask.empty() ? highlightMask.c_str() : " ");
+      std::vector<std::string> filters = split(std::string(filter), std::string(";"));
+      
       std::vector<std::pair<std::wstring, bool>> pathes;
       
       for (auto const& dir_entry : std::filesystem::directory_iterator(path))
         pathes.push_back(std::make_pair(dir_entry.path().filename().wstring(), std::filesystem::is_directory(dir_entry)));
 
-      for(const auto& p : pathes)
       std::stable_sort(pathes.begin(), pathes.end(), [](const std::pair<std::wstring, bool>& a, const std::pair<std::wstring, bool>& b)->bool {
                                                         if(a.second == b.second)
                                                           return SFW(a.first) < SFW(b.first); // inefficient but valgrind complains on that otherwise (most likelly false positive but annoying anyways)
@@ -142,18 +211,25 @@ namespace ImGui {
                                                       });
 
       std::vector<std::string> strings;
-      for (const auto& p : pathes)
-        strings.push_back(SFW(p.first));
-
+      std::vector<int> selectedLookUp;
+      for (int i=0; i<pathes.size(); i++) {
+        std::string item = SFW(pathes[i].first);
+        if(match(item,filters) || pathes[i].second) {
+          strings.push_back(SFW(pathes[i].first));
+          selectedLookUp.push_back(i);
+        }
+      }
+      
       std::vector<const char*> cstrings;
       for (const auto& p : strings)
         cstrings.push_back(p.c_str());
-            
+      
       if (ListBox(" ", &selected, cstrings.data(), cstrings.size(), 22)) {
         if (selected != -1) {
-          if(pathes[selected].second) {
+          const auto& p=pathes[selectedLookUp[selected]];
+          if(p.second) {
             newpath.str(L"");
-            auto dirs = split(path.wstring() + pathes[selected].first, path_delimiter);
+            auto dirs = split(path.wstring() + p.first, path_delimiter);
             for (auto d : dirs) {
               if (d.empty())
                 continue;
@@ -161,10 +237,57 @@ namespace ImGui {
             }
             path = newpath.str();
             selected = -1;
-          } else
-            selected_file = path.wstring() + pathes[selected].first;
+          }
         } 
+        highlightMask = "";
       }
+      
+      ImGuiIO& gio = ImGui::GetIO();
+      ImGuiContext& g = *ImGui::GetCurrentContext();
+      ImGuiWindow* currentWindow = g.CurrentWindow; //open popup
+      ImGuiWindow* listWindow = nullptr;
+      
+      for(auto win : g.Windows) {
+        if(win->ParentWindow == currentWindow) {
+          listWindow = win;
+          break;
+        }
+      }
+      
+      if(listWindow) {
+        for (int key = 0; key < IM_ARRAYSIZE(gio.KeysDown); key++) {
+          if (ImGui::IsKeyPressed(key))
+          {
+            if(key == ImGui::GetKeyIndex(ImGuiKey_::ImGuiKey_DownArrow)) {
+              selected = selected < (int) cstrings.size() - 1 ? selected + 1 : (int) cstrings.size() - 1;
+              listWindow->Scroll.y += g.Style.ItemSpacing.y + g.FontSize;
+              highlightMask = "";
+            }
+            if(key == ImGui::GetKeyIndex(ImGuiKey_::ImGuiKey_UpArrow)) {
+              selected = selected > 0 ? selected-1 : selected;
+              listWindow->Scroll.y -= g.Style.ItemSpacing.y + g.FontSize;
+              highlightMask = "";
+            }
+            if(key <= 90 && key>=65 && listenToFirstLetters) {
+              highlightMask += char(key);
+              int itemId=-1;
+              for(int i=0; i<strings.size(); i++) {
+                if(searchByFirstLettersNoCase(strings[i], highlightMask)) {
+                  itemId=i;
+                  break;
+                }
+              }
+              if(itemId!=-1) {
+                selected = itemId;
+                listWindow->Scroll.y = selected * (g.Style.ItemSpacing.y + g.FontSize);
+              }
+            }
+          }
+        }
+      }
+      
+      if(selected != -1 && selected < selectedLookUp.size())
+        selected_file = path.wstring() + pathes[selectedLookUp[selected]].first;
       
       if (Button("cancel"))
         CloseCurrentPopup();
