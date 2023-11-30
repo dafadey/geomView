@@ -1,8 +1,18 @@
+#ifdef _MSC_VER
+#define NOMINMAX
+#endif
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#if NOSTDFILESYSTEM
+#define FSNAMESPACE STD11FS // use our own win API (hope the old std is not the case for g++ builds) based filesystem implementation (only needed features ofcourse)
+#include "filesystem_internal.h"
+#else
+#define FSNAMESPACE std // std::filesystem will be used
 #include <filesystem>
+#endif
+
 #include <algorithm>
 #include <vector>
 
@@ -24,7 +34,7 @@ static void _update_camera(const vec3f& dir, const vec3f& up, renderer* ren) {
   }
 }
 
-static std::filesystem::path path = std::filesystem::current_path();
+static FSNAMESPACE::filesystem::path path = FSNAMESPACE::filesystem::current_path();
 
 std::string SFW(const std::wstring& in) {
   char tmp[113];
@@ -67,21 +77,30 @@ bool match(const std::string& s, const std::vector<std::string>& filter) {
       if(s[i] == f[j]) {
         i++;
         j++;
+        if(j==f.size() && i!=s.size())
+          j = std::min(j0 + 1, (int)f.size() - 1);
       } else {
-        if(j0>=0 && f[j0] == '*' && j==j0+1) {
+        if((j0>=0 && f[j0] == '*' && j==j0+1) || f[j] == '*') {
           i++;
         } else if(f[j] == '?') {
           i++;
           j++;
-        } else
-          j =std::min(j0 + 1, (int) f.size() - 1);
+        }
+        else {
+          if (j0 != -1)
+            j = std::min(j0 + 1, (int)f.size() - 1);
+          else {
+            result = false;
+            break;
+          }
+        }
       }
       if(j==0 && i==0 && f[0] != '*') {
         result = false;
         break;
       }
-      if(j == f.size() && i == s.size()) {
-        result = true;
+      if(j == f.size()) {
+        result = (i == s.size() || f[j - 1] == '*');
         break;
       }
       if(i == s.size()) {
@@ -178,6 +197,7 @@ namespace ImGui {
       #ifndef WIN32
       newpath << '/';
       #endif
+      bool pressed = false;
       for(int dir_id=0; dir_id<dirs.size(); dir_id++) {
         auto& d = dirs[dir_id];
         if (d.empty())
@@ -185,6 +205,7 @@ namespace ImGui {
         newpath << d << path_delimiter;
         if(Button(SFW(d).c_str())) {
           selected = -1;
+          pressed = true;
           break;
         }
         if(dir_id + 2 == dirs.size())
@@ -201,8 +222,8 @@ namespace ImGui {
       
       std::vector<std::pair<std::wstring, bool>> pathes;
       
-      for (auto const& dir_entry : std::filesystem::directory_iterator(path))
-        pathes.push_back(std::make_pair(dir_entry.path().filename().wstring(), std::filesystem::is_directory(dir_entry)));
+      for (auto const& dir_entry : FSNAMESPACE::filesystem::directory_iterator(path))
+        pathes.push_back(std::make_pair(dir_entry.path().filename().wstring(), FSNAMESPACE::filesystem::is_directory(dir_entry)));
 
       std::stable_sort(pathes.begin(), pathes.end(), [](const std::pair<std::wstring, bool>& a, const std::pair<std::wstring, bool>& b)->bool {
                                                         if(a.second == b.second)

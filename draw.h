@@ -4,7 +4,10 @@
 #include <windows.h>
 #endif
 
-#include <GL/glew.h>
+#ifndef GLEWINIT_INTERNAL
+  #include <GL/glew.h>
+#endif
+
 #include <array>
 #include <vector>
 #include <cfloat>
@@ -12,6 +15,10 @@
 #include <map>
 #include "OGLitem.h"
 #include "vectors.h"
+
+#ifdef GLEWINIT_INTERNAL
+  extern GLenum glewInit(void);
+#endif
 
 struct GLFWwindow;
 

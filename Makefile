@@ -23,13 +23,26 @@ endif
 
 all : $(TARGET_EXEC) $(TARGET_LIB)
 
-$(TARGET_EXEC): $(OBJS) obj/main.o shaderRAMfs.cpp.inl | obj
+$(TARGET_EXEC): $(OBJS) obj/main.o shaderRAMfs.cpp.inl obj
 	g++ -g -fPIC obj/main.o $(OBJS) -o $@ $(libs) 
 
-$(TARGET_LIB): $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl  | obj
+$(TARGET_LIB): $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl obj
 	g++ -g -fPIC -shared obj/mainlib.o $(OBJS) -o $@.$(soext) $(libs) 
-	ar rcs -o $@.a obj/mainlib.o $(OBJS)
+	echo "create $@.a\naddmod obj/mainlib.o $OBJS\nsave\nexit\n" | ar -M
 
+$(TARGET_LIB): $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl obj arscript
+	g++ -g -fPIC -shared obj/mainlib.o $(OBJS) -o $@.$(soext) $(libs) 
+	if [ -d libglfw_objs ]; then ar rcs -o $@.a libglfw_objs/*.obj obj/mainlib.o $(OBJS); \
+	else ar rcs -o $@.a obj/mainlib.o $(OBJS); \
+	fi
+
+arscript :
+	if [ -e ${LIBRARY_PATH}/libglfw3.a ]; then mkdir -p libglfw_objs; \
+	cp ${LIBRARY_PATH}/libglfw3.a libglfw_objs/; \
+	cd libglfw_objs; \
+	ar -x libglfw3.a; \
+	fi
+	
 #%.o: %.cpp
 #	g++ -g -fPIC -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends -c $< -o $@
 
@@ -40,9 +53,9 @@ shaderRAMfs.cpp.inl : $(SHADERS)
 	./codegen $(SHADERS) > shaderRAMfs.cpp.inl
 
 obj :
-	@mkdir obj
-	mkdir obj/imgui
-	mkdir obj/imgui/backends
+	@mkdir -p obj
+	mkdir -p obj/imgui
+	mkdir -p obj/imgui/backends
 
 obj/Makefile.deps : shaderRAMfs.cpp.inl | obj imgui
 	@bash gendeps.sh $(SOURCES_ALL) main.cpp mainlib.cpp

@@ -4,7 +4,13 @@
 struct object;
 struct renderer;
 
-struct geom_view {
+#ifdef MSVC_DYNAMIC_BUILD
+  #define MSVC_EXPORT __declspec (dllexport)
+#else
+  #define MSVC_EXPORT
+#endif
+
+struct MSVC_EXPORT geom_view {
   renderer* ren_ptr{nullptr};
   object* obj_root{nullptr};
   void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
