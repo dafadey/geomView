@@ -3,12 +3,6 @@ project(geom_view_project)
 
 include(ExternalProject)
 
-set(CMAKE_INSTALL_PREFIX "C:/Temp/gv/install" CACHE PATH "" FORCE)
-set(GLEW_DIR "C:/Users/dan/glew-2.1.0/install/lib/cmake/glew" CACHE 
-STRING "")
-set(glfw3_DIR "C:/Users/dan/glfw3/install/lib/cmake/glfw3" CACHE STRING 
-"")
-
 set(GIT_EXECUTABLE "git" CACHE STRING "git executable with full path")
 
 #find_package(Git)
