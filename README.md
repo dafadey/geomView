@@ -123,6 +123,82 @@ g++ -g -O3 -DNOIMPLOT -I./imgui -I./imgui/backends -c imgui/backends/imgui_impl_
 g++ -g -O3 -DNOIMPLOT -I./imgui -I./imgui/backends -c imgui/backends/imgui_impl_opengl3.cpp -o imgui/backends/imgui_impl_opengl3.cpp.o
 g++ -g -O3 geo.cpp.o draw.cpp.o imgui_controls.cpp.o interface.cpp.o main.cpp.o object.cpp.o OGLitem.cpp.o saveSTL.cpp.o timer.cpp.o tools.cpp.o vectors.cpp.o imgui/imgui.cpp.o imgui/imgui_draw.cpp.o imgui/imgui_tables.cpp.o imgui/imgui_widgets.cpp.o imgui/backends/imgui_impl_glfw.cpp.o imgui/backends/imgui_impl_opengl3.cpp.o -o geom_view -lglfw -lGLEW -lGL
 ```
+## Microsoft Visual Studio build
+We support old versions of MSVC supporting only std11 and std14. For any MSVC version we use old standard with internal implementation of necessary std::filesystem functionality appeared in std17. To build geomViewwith MSVC you need to get and build sources for [GLEW](https://sourceforge.net/projects/glew/files/glew/2.1.0/glew-2.1.0.zip/download) and [GLFW](https://github.com/glfw/glfw/archive/refs/heads/master.zip).We suggest to use CMake-GUI to configure all three (GLEW,GLFW and geomView) projects. Everytime after first hit of Configure button in CMake-GUI please double check your settgins:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/CMake_compiler_platform_common.png)
+
+Now let us get to static build of GLEW and GLFW. It is convenient to use static libraries to have indepentent binary and libraries.
+
+### GLEW
+Before running CMake-GUI create build and install folders. It is convenient to keep those in glew-2.1.0. Since GLEW already has build folder change some another name. Here and after we will always use build2015 for build pupposes and install2015 for installation purposes. After folders are created run CMake-GUI and set source and build folders. For GLEW it is quite counter intuitive sice CMakeLists.txt is located at glew-2.1.0/build/cmake and it is exaclty the folder treated as source by CMake. Configure step can be execute several times. Each time you set missing pathes and settings. Finally you should get the following state:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/CMake_glew.png)
+
+After that hit Generate, Run MSVC set **Release** build type, build ALL_BUILD and then build INSTALL.
+
+### GLFW
+Do the same steps. You expected to have the following CMake configuration:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/CMake_glfw3.png)
+
+Build and install GLFW the same way.
+
+### geomView
+Do the same steps. You expected to have the following CMake configuration:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/CMake_geomView.png)
+
+Build and install geomView the same way. Now you have geom_view.exe and geom_view.dll in install2015/bin/, geom_view.h header in install2015/include/, static (libgeom_view.lib) and dynamic (geom_view.lib) in install2015/lib/.
+
+### testing geomView library
+Weare going to use static libgeom_view.lib in this section. In the folder testlib there is a single source test.cpp for tiny test. The test shows how to use callback function to organize interaction between console application and geom_view thread. We intentionally did not create CMakeLists.txt to show how to use geomView library from scratch since tiny projects typically do not have build systems.
+First create a project nearby test.cpp:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.1_file-new-project.png)
+
+Pathes should look as follows:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.2_file-new-project_navigate.png)
+
+Make C++ console application
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.3_file-new-project.png)
+
+Make sure it is **empty**:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.4_app_settings.png)
+
+Now add existing file test.cpp:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.5-add-existing-file.png)
+
+Solution Explorer now should look as follows:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.6-file-added.png)
+
+**Before getting to next step** set Release build type and proper architecture (**x64** in our case). Now proceed to project properties.
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.7-test-Properties.png)
+
+Set include directioes:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.8-include-dirs.png)
+
+Set library directories:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.9-lib-dir.png)
+
+And finally static library libgeom_view.lib and system opengl32.lib:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.10-lib.png)
+
+After that build and run the application:
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/testlib.11-result.png)
+
+Play with control points (red stars). Each time you move control point callback is called and geometry is regerated with the code from test.cpp, dumped to disk, and then geom_view is updated with test.cpp code.
+
 ## Input format
 Input format is human readable and intuitive. Look through sample.txt to get how it works<br>
 Make groups of points, lines and triangles, groups can be named (A1, A2, A3 in sample.txt)<br>
@@ -151,9 +227,13 @@ Run with
 ./geom_view sample.txt
 ```
 The expected result is:
-![This is an image](https://github.com/dafadey/geomView/blob/main/example_simple.png)
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/example_simple.png)
+
 Groups A1 A2 and A3 can be hiden using check boxes.<br>
 
 Another more complicated cases may look like this:
-![This is an image](https://github.com/dafadey/geomView/blob/main/example.png)
+
+![This is an image](https://github.com/dafadey/geomView/blob/main/doc/example.png)
+
 Use *open* button to add more entities. Entities can be removed or hidden with corresponding buttons.
