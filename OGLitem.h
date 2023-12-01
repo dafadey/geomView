@@ -54,7 +54,7 @@ struct OGLtriangles : public OGLitem {
   GLint shiny_location{};
   
   GLfloat surface_color[3]{.5f, .5f, .5f};
-  GLfloat shiny{0.3};
+  GLfloat shiny{.3f};
   
   GLint tris_count{};
 };

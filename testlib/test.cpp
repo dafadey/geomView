@@ -1,7 +1,18 @@
 #include <iostream>
 #include <fstream>
-#include "../geom_view.h"
-#include "../vectors.cpp" //yep lets include whole source with header inside
+#include <array>
+#include <vector>
+#include "geom_view.h"
+
+typedef std::array<float, 3> vec3f;
+
+vec3f operator+(const vec3f& a, const vec3f& b) {
+  return vec3f{ a[0] + b[0], a[1] + b[1] ,a[2] + b[2] };
+}
+
+vec3f operator*(float a, const vec3f& b) {
+	return vec3f{ a * b[0], a * b[1] , a * b[2] };
+}
 
 struct geo {
   std::array<vec3f, 3> controlPts;
@@ -41,7 +52,7 @@ void moveControl(void* callback_data, std::vector<std::string>& sId, double x, d
   geom_view* gv = static_cast<geom_view*>((*data)[0]);
   
   int id = atoi(sId.back().c_str());
-  g->controlPts[id] = vec3f{x,y,z};
+  g->controlPts[id] = vec3f{(float) x, (float) y, (float) z};
   dump_geo(*g);
   gv->reload();
 }
@@ -49,9 +60,9 @@ void moveControl(void* callback_data, std::vector<std::string>& sId, double x, d
 int main() {
   geo g;
 
-  g.controlPts[0] = vec3f{0,0,0.1};
-  g.controlPts[1] = vec3f{3,0,0.2};
-  g.controlPts[2] = vec3f{0,1.7,0.3};
+  g.controlPts[0] = vec3f{0.f,0.f,.1f};
+  g.controlPts[1] = vec3f{3.f,0.f,.2f};
+  g.controlPts[2] = vec3f{0.f,1.7f,.3f};
   dump_geo(g);
 
   geom_view gv;

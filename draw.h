@@ -72,7 +72,7 @@ struct renderer {
   
   bool parallel=true;
   
-  std::array<GLfloat, 3> bg_color {.3, .3, .3};
+  std::array<GLfloat, 3> bg_color {.3f, .3f, .3f};
   
   void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
   void* callbackData {nullptr};
