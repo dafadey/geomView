@@ -82,7 +82,7 @@ static void checkSetWindowGeo(mainwin_config& conf) {
       glfwGetMonitorWorkarea(monitors[i], &posx, &posy, &width, &height);
       bool OK = validRectsOverlap(posx, posy, width, height, conf.posx, conf.posy, conf.width, conf.height);
       //it is also weird if in any direction window exceeds monitor workarea
-      OK &= (posx < conf.posx && conf.posx + conf.width > posx + width) || (posy < conf.posy && conf.posy + conf.height > posy + height);
+      OK &= !((conf.posx < posx && conf.posx + conf.width > posx + width) || (conf.posy < posy && conf.posy + conf.height > posy + height));
       placementIsOK |= OK;
     }
   }
