@@ -12,12 +12,18 @@
 #include <implot.h>
 #endif
 
+#define MAINWIN_WIDTH_DEFAULT 1024
+#define MAINWIN_HEIGHT_DEFAULT 768
+#define MAINWIN_POSX_DEFAULT 31
+#define MAINWIN_POSY_DEFAULT 31
+
 struct mainwin_config {
-  int width{1024};
-  int height{768};
-  int posx{31};
-  int posy{31};
+  int width{MAINWIN_WIDTH_DEFAULT};
+  int height{MAINWIN_HEIGHT_DEFAULT};
+  int posx{MAINWIN_POSX_DEFAULT};
+  int posy{MAINWIN_POSY_DEFAULT};
   std::vector<std::string> recent_files;
+  bool valid() const;
 };
 
 struct imgui_interface {
