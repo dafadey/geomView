@@ -204,13 +204,12 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
         last_found++;
         last_found = in_obj->addChild(last_found, obj);
       }
-      std::cout << "\treloading gorup " << obj->name << '\n';
+      std::cout << "\treloading group " << obj->name << '\n';
       triangles = dynamic_cast<OGLtriangles*>(obj->item);
       lines = dynamic_cast<OGLlines*>(obj->item);
       points = dynamic_cast<OGLpoints*>(obj->item);
       obj->item->clear();
-    }
-    else {
+    } else {
       auto vects = split_vectors(line_no_spaces);
       if(points) {
         if(vects.size() == 1)
