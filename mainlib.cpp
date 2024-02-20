@@ -7,10 +7,10 @@
 #include "geom_view.h"
 #include "imgui_controls.h"
 
-static void thread_func(geom_view* gv, std::vector<std::string> filenames) {
+void geom_view::thread_func(geom_view* gv) {
   imgui_interface iface;
   iface.init();
-    
+  
   gv->obj_root = new object;
   gv->obj_root->name = "root";
   gv->ren_ptr = new renderer;
@@ -20,7 +20,7 @@ static void thread_func(geom_view* gv, std::vector<std::string> filenames) {
   ren.controlPointMoved = gv->controlPointMoved;
   ren.callbackData = gv->callbackData;
   
-  for(const auto& filename : filenames) {
+  for(const auto& filename : gv->filenames) {
     if(!filename.empty())
       load_objects(gv->obj_root, filename.c_str(), &ren);
   }
@@ -28,7 +28,14 @@ static void thread_func(geom_view* gv, std::vector<std::string> filenames) {
   ren.reset_camera();
 
   glfwSetWindowUserPointer(iface.window, (void*) &ren);
-    
+  
+  //glfwMakeContextCurrent(nullptr);
+  
+  gv->initLock.unlock();
+  
+  //gv->contextLock.try_lock();
+  //gv->contextLock.lock();
+
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
     //glfwPollEvents();
@@ -66,24 +73,37 @@ static void thread_func(geom_view* gv, std::vector<std::string> filenames) {
     glfwSwapBuffers(iface.window);
     glFlush();
   }
+  std::cout << "geom view thread finishes\n";
   delete gv->obj_root;
+  gv->obj_root = nullptr;
+  delete gv->ren_ptr;
+  gv->ren_ptr = nullptr;
   iface.close();
 }
 
-void geom_view::init(const std::vector<std::string>& filenames) {
-  std::thread th(thread_func, this, filenames);
+void geom_view::init() {
+  initLock.try_lock();
+  std::thread th(geom_view::thread_func, this);
   th.detach();
+  initLock.lock();
+  //glfwMakeContextCurrent(ren_ptr->win); // typically calling thread differs from one that creates geomView main window so to make GL functions work properly we have to set current GL context to one created during main window creation.
+  //contextLock.unlock();
+}
+
+void geom_view::init(const std::vector<std::string>& filenames_) {
+  filenames = filenames_;
+  init();
 }
 
 void geom_view::init(const std::string& filename) {
   std::vector<std::string> filenames;
   filenames.push_back(filename);
-  std::thread th(thread_func, this, filenames);
-  th.detach();
+  init(filenames);
 }
 
 void geom_view::reload() {
-  glfwMakeContextCurrent(ren_ptr->win); // typically calling thread differs from one that creates geomView main window so to make GL functions work properly we have to set current GL context to one created during main window creation. 
+  if(!ren_ptr)
+    init();
   ::reload(obj_root, ren_ptr);
 }
 

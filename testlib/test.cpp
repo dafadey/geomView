@@ -83,6 +83,8 @@ int main() {
       g.origin = false;
     else if(cmd == "reload")
       gv.reload();
+    else if(cmd == "init")
+      gv.init("triangle.txt");
     else {
       std::cout << "unknown command\n";
       continue;

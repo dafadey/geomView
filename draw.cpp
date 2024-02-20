@@ -342,11 +342,26 @@ bool renderer::init(GLFWwindow* win_, object* obj_) {
   return true;
 }
 
+static void uset_callbacks(GLFWwindow* window) {
+  glfwSetCursorPosCallback(window, nullptr);
+  glfwSetMouseButtonCallback(window, nullptr);
+  glfwSetScrollCallback(window, nullptr);
+  glfwSetFramebufferSizeCallback(window, nullptr);
+  glfwSetWindowCloseCallback(window, nullptr);
+}
+
+static void window_close_callback(GLFWwindow* window) {
+  renderer* r = (renderer*)glfwGetWindowUserPointer(window);
+  r->win = nullptr;
+  uset_callbacks(window);
+}
+
 void renderer::set_callbacks(GLFWwindow* window) {
   glfwSetCursorPosCallback(window, cursor_position_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
   glfwSetScrollCallback(window, scroll_callback);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetWindowCloseCallback(window, window_close_callback);
 }
 
 static void iterate_collect_items(std::vector<OGLitem*>& items, const object* obj) {
@@ -367,6 +382,9 @@ std::vector<OGLitem*> renderer::get_items() {
 }
 
 void renderer::render() {
+  std::cout << "renderer::render\n";
+  if(!win)
+    return;
   int win_geo[2];
   glfwGetWindowSize(win, win_geo, &win_geo[1]);
 
