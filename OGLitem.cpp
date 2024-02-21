@@ -118,7 +118,8 @@ void OGLtriangles::copyVBOtoDevice() {
     return;
   }
 
-  std::cout << "tri: no data to copy to device VBO, VBOdata is empty\n";
+  if(VBOdata.size()==0)
+    std::cout << "tri: no data to copy to device VBO, VBOdata is empty\n";
 
   glBindVertexArray(vao);
 
@@ -256,7 +257,8 @@ void OGLlines::copyVBOtoDevice() {
     return;
   }
 
-  std::cout << "lines: no data to copy to device VBO, VBOdata is empty\n";
+  if(VBOdata.size()==0)
+    std::cout << "lines: no data to copy to device VBO, VBOdata is empty\n";
 
   glBindVertexArray(vao);
 
@@ -394,7 +396,8 @@ void OGLpoints::copyVBOtoDevice() {
     return;
   }
 
-  std::cout << "points: no data to copy to device VBO, VBOdata is empty\n";
+  if(VBOdata.size()==0)
+    std::cout << "points: no data to copy to device VBO, VBOdata is empty\n";
 
   glBindVertexArray(vao);
 

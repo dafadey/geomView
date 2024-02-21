@@ -382,7 +382,6 @@ std::vector<OGLitem*> renderer::get_items() {
 }
 
 void renderer::render() {
-  std::cout << "renderer::render\n";
   if(!win)
     return;
   int win_geo[2];

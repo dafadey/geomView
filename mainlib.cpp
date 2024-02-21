@@ -29,16 +29,20 @@ void geom_view::thread_func(geom_view* gv) {
 
   glfwSetWindowUserPointer(iface.window, (void*) &ren);
   
-  //glfwMakeContextCurrent(nullptr);
-  
   gv->initLock.unlock();
   
-  //gv->contextLock.try_lock();
-  //gv->contextLock.lock();
-
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
     //glfwPollEvents();
+    
+    gv->reloadLock.lock();
+    if(gv->reloadFlag) {
+      gv->reloadFlag = false;
+      ::reload(gv->obj_root, gv->ren_ptr);
+    }
+    gv->reloadLock.unlock();
+
+    
     ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
     if(ren.nocallbacks)
       glfwSetScrollCallback(iface.window, ImGui_ImplGlfw_ScrollCallback);
@@ -86,12 +90,12 @@ void geom_view::init() {
   std::thread th(geom_view::thread_func, this);
   th.detach();
   initLock.lock();
-  //glfwMakeContextCurrent(ren_ptr->win); // typically calling thread differs from one that creates geomView main window so to make GL functions work properly we have to set current GL context to one created during main window creation.
-  //contextLock.unlock();
 }
 
 void geom_view::init(const std::vector<std::string>& filenames_) {
-  filenames = filenames_;
+  filenames.clear();
+  for(const auto& fn : filenames_)
+    filenames.push_back(fn);
   init();
 }
 
@@ -104,7 +108,14 @@ void geom_view::init(const std::string& filename) {
 void geom_view::reload() {
   if(!ren_ptr)
     init();
-  ::reload(obj_root, ren_ptr);
+  reloadLock.lock();
+  reloadFlag = true;
+  reloadLock.unlock();
+  glfwPostEmptyEvent();  
+
+  //no need for that stuff with context ownership management since it is more stable just to send request to mainthread. EmptyEvent allows to process request -- that is it!
+  //glfwMakeContextCurrent(ren_ptr->win); // typically calling thread differs from one that creates geomView main window so to make GL functions work properly we have to set current GL context to one created during main window creation.
+  //::reload(obj_root, ren_ptr);
 }
 
 void geom_view::setCallBack(void* data, void (*callback)(void*, std::vector<std::string>& sId, double x, double y, double z)) {

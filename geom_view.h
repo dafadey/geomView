@@ -19,7 +19,8 @@ struct MSVC_EXPORT geom_view {
   
 private:  
   std::vector<std::string> filenames;
-  std::mutex initLock;//, contextLock;
+  std::mutex initLock, reloadLock;
+  bool reloadFlag {false};
   void init();
   
 public:
