@@ -158,12 +158,15 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
   if(ren->mouse_state == renderer::e_mouse_state::SELECT_DRAG) {
     vec3f d = getD(window, ren);
-    const object* obj = std::get<0>(ren->selectionResults.back());
-    size_t item_id = std::get<2>(ren->selectionResults.back());
-    for(int i=0; i<3; i++)
-      obj->item->VBOdata[item_id * obj->item->VBOstride() + i] = ren->selectedPointPos0[i] + d[i];
-    obj->item->VBOdata[item_id * obj->item->VBOstride() + 3] = ren->selectedPointRadius * 1.3f;
-    obj->item->vboCopied=false;
+    if(ren->selectionResults.size())
+    {
+      const object* obj = std::get<0>(ren->selectionResults.back());
+      size_t item_id = std::get<2>(ren->selectionResults.back());
+      for(int i=0; i<3; i++)
+        obj->item->VBOdata[item_id * obj->item->VBOstride() + i] = ren->selectedPointPos0[i] + d[i];
+      obj->item->VBOdata[item_id * obj->item->VBOstride() + 3] = ren->selectedPointRadius * 1.3f;
+      obj->item->vboCopied=false;
+    }
   }
   
   ren->mouse_pos[0] = xpos;
@@ -196,6 +199,8 @@ static void select_object(const object* obj, const renderer* ren, std::vector<st
       select_object(co, ren, res, onlyControlPoints);
   }
   if(!obj->item)
+    return;
+  if(!obj->item->visible)
     return;
   if(onlyControlPoints && !obj->item->isControlPoints())
     return;
@@ -242,7 +247,6 @@ vec2f renderer::project(const vec3f& pt) const {
 }
 
 void renderer::select(bool onlyControlPoints) const {
-  std::cout << "select\n";
   selectionResults.clear();
   select_object(obj, this, selectionResults, onlyControlPoints);
   std::sort(selectionResults.begin(), selectionResults.end(), [](const std::tuple<const object*, GLfloat, size_t>& a, const std::tuple<const object*, GLfloat, size_t>& b) {return std::get<1>(a) > std::get<1>(b);});
