@@ -169,7 +169,9 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
       continue;
     auto tokens = split(line_no_spaces, std::string(":"));
     if(tokens[0] == "triangles" || tokens[0] == "lines" || tokens[0] == "vectors" || tokens[0] == "points" || tokens[0] == "control_points") {
+      #ifndef QUIET
       std::cout << "working with " << tokens[1] << '\n';
+      #endif
       obj = nullptr;
       //super slow search with crazy string comparisons. who cares!
       for(auto it = in_obj->children().begin(); it != in_obj->children().end(); it++) {
@@ -192,9 +194,11 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
           objects_to_remove.erase(o);
         }
       }
+      #ifndef QUIET
       if(obj)
         std::cout << "found!\n";
       std::cout << "last_found=" << (*last_found)->name << '\n';
+      #endif
       if(!obj) {
         obj = new object();
         std::string type = tokens[0];
@@ -204,7 +208,9 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
         last_found++;
         last_found = in_obj->addChild(last_found, obj);
       }
+      #ifndef QUIET
       std::cout << "\treloading group " << obj->name << '\n';
+      #endif
       triangles = dynamic_cast<OGLtriangles*>(obj->item);
       lines = dynamic_cast<OGLlines*>(obj->item);
       points = dynamic_cast<OGLpoints*>(obj->item);

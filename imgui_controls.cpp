@@ -133,6 +133,20 @@ bool searchByFirstLettersNoCase(const std::string& s, const std::string& highlig
 
 namespace ImGui {
 
+  void FilterTickObject(object* obj, const std::vector<std::string>& filter, bool tick) {
+    for(auto ch : obj->children())
+      FilterTickObject(ch, filter, tick);
+    if(obj->item) {
+      std::string fn;
+      std::vector<std::string> fullNameItemsReverse = obj->fullName();
+      for(int i=fullNameItemsReverse.size()-1; i>=0; i--)
+        fn += fullNameItemsReverse[i];
+
+      if(match(fn, filter))
+        obj->item->visible = tick;
+    }
+  }
+
   bool DoObject(object* obj) {
     if (obj->children().size()) {
       if (ImGui::TreeNode(obj->name.c_str())) {
@@ -343,6 +357,21 @@ namespace ImGui {
         CloseCurrentPopup();
       EndPopup();
     }
+    
+    static char tickfilter[128]="*";
+    if(InputText("aaa",tickfilter, IM_ARRAYSIZE(tickfilter)))
+      std::cout << "tickuntick filter activted\n";
+    int doFilterTick=0;
+    SameLine();
+    if(Button("tick"))
+      doFilterTick=1;
+    SameLine();
+    if(Button("untick"))
+      doFilterTick=2;
+    
+    if(doFilterTick)
+      FilterTickObject(obj, split(std::string(tickfilter), std::string(";")), doFilterTick==1 ? true : false);
+    
     DoObject(obj);  
     ImGui::End();
     return true;

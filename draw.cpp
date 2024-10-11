@@ -22,7 +22,9 @@ static GLuint loadShaders(const std::string& VertexShaderCode, const std::string
     GLint Result = GL_FALSE;
     int InfoLogLength;
 
+    #ifndef QUIET
     std::cout << "building vertex shader...\n";
+    #endif
     char const * VertexSourcePointer = VertexShaderCode.c_str();
     glShaderSource(VertexShaderID, 1, &VertexSourcePointer , NULL);
     glCompileShader(VertexShaderID);
@@ -50,7 +52,9 @@ static GLuint loadShaders(const std::string& VertexShaderCode, const std::string
       }
     }
 
+    #ifndef QUIET
     std::cout << "building fragment shader...\n";
+    #endif
     char const * FragmentSourcePointer = FragmentShaderCode.c_str();
     glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer , NULL);
     glCompileShader(FragmentShaderID);
@@ -63,7 +67,9 @@ static GLuint loadShaders(const std::string& VertexShaderCode, const std::string
       std::cerr << "building fragment shader failed with " << FragmentShaderErrorMessage.data() << '\n';
     }
 
+    #ifndef QUIET
     std::cout << "building shader program...\n";
+    #endif
     GLuint ProgramID = glCreateProgram();
     glAttachShader(ProgramID, VertexShaderID);
     if (GeometryShaderID)

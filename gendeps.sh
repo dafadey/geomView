@@ -2,7 +2,7 @@ echo Generating dependencies...
 
 rm -f Makefile.deps
 
-cmd="g++ -g -fPIC -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends"
+cmd="g++ -g -fPIC -DQUIET -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends"
 
 function add {
   a=$(${cmd} -MM $1)

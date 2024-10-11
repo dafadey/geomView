@@ -14,5 +14,11 @@ void timer::reset() {
 
 timer::~timer() {
   if(!message.empty())
+  {
+    #ifndef QUIET
     std::cout << message << ' ' << elapsed() << " s\n";
+    #else
+    std::cerr << message << ' ' << elapsed() << " s\n";
+    #endif
+  } 
 }

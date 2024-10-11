@@ -50,7 +50,9 @@ OGLitem* newOGLitem(const std::string& type) {
   } else if (type == "control_points") {
     return new OGLControlPoints();
   } else {
+    #ifndef QUIET
     std::cout << "newOGLitem: unknown type " << type << '\n';
+    #endif
     return nullptr;
   }
 }
@@ -69,16 +71,23 @@ void OGLtriangles::init(renderer* ren_) {
     glGenVertexArrays(1, &vao);
     if (vao)
       glBindVertexArray(vao);
+    #ifndef QUIET
     else
       std::cout << "failed to get vao\n";
-  } else
+    #endif
+  }
+  #ifndef QUIET
+  else
     std::cout << "WARNING: VAO is already initialized to " << vao << '\n';
+  #endif
   
   if(!VBO)
     glGenBuffers(1, &VBO);
+  #ifndef QUIET
   else
     std::cout << "WARNING: VBO is already initialized to " << VBO << '\n';
-
+  #endif
+  
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
   shader = ren->getShader("sha.vs", "sha.fs");
@@ -92,7 +101,7 @@ void OGLtriangles::init(renderer* ren_) {
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
   shiny_location = glGetUniformLocation(shader, "shiny");
 
-
+  #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: norms_location=" << norms_location << '\n';
   std::cout << "\tattr: color_location=" << colors_location << '\n';
@@ -101,6 +110,7 @@ void OGLtriangles::init(renderer* ren_) {
   std::cout << "\tuniform: shiny_location=" << shiny_location << '\n';
   std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
+  #endif
   glBindVertexArray(0);
 }
 
@@ -118,9 +128,11 @@ void OGLtriangles::copyVBOtoDevice() {
     return;
   }
 
+  #ifndef QUIET
   if(VBOdata.size()==0)
     std::cout << "tri: no data to copy to device VBO, VBOdata is empty\n";
-
+  #endif
+  
   glBindVertexArray(vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -197,17 +209,23 @@ void OGLlines::init(renderer* ren_) {
     glGenVertexArrays(1, &vao);
     if (vao)
       glBindVertexArray(vao);
+    #ifndef QUIET
     else
       std::cout << "failed to get vao err#"<< glGetError() << "\n";
+    #endif
   }
+  #ifndef QUIET
   else
     std::cout << "WARNING: VAO is already initialized to " << vao << '\n';
-
+  #endif
+  
   if (!VBO)
     glGenBuffers(1, &VBO);
+  #ifndef QUIET
   else
     std::cout << "WARNING: VBO is already initialized to " << VBO << '\n';
-
+  #endif
+  
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
   shader = ren->getShader("sha_line.vs", "sha.fs");
@@ -219,11 +237,13 @@ void OGLlines::init(renderer* ren_) {
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
   aspect_location = glGetUniformLocation(shader, "aspect");
 
+  #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: colors_location=" << colors_location << '\n';
 
   std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
+  #endif
   glBindVertexArray(0);
 }
 
@@ -257,9 +277,11 @@ void OGLlines::copyVBOtoDevice() {
     return;
   }
 
+  #ifndef QUIET
   if(VBOdata.size()==0)
     std::cout << "lines: no data to copy to device VBO, VBOdata is empty\n";
-
+  #endif
+  
   glBindVertexArray(vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -330,16 +352,22 @@ void OGLpoints::init(renderer* ren_) {
     glGenVertexArrays(1, &vao);
     if(vao)
       glBindVertexArray(vao);
+    #ifndef QUIET
     else
       std::cout << "failed to get vao\n";
+    #endif
   }
+  #ifndef QUIET
   else
     std::cout << "WARNING: VAO is already initialized to " << vao << '\n';
-
+  #endif
+  
   if (!VBO)
     glGenBuffers(1, &VBO);
+  #ifndef QUIET
   else
     std::cout << "WARNING: VBO is already initialized to " << VBO << '\n';
+  #endif
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
@@ -353,6 +381,7 @@ void OGLpoints::init(renderer* ren_) {
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
   aspect_location = glGetUniformLocation(shader, "aspect");
 
+  #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: radii_location=" << radii_location << '\n';
   std::cout << "\tattr: colors_location=" << colors_location << '\n';
@@ -360,6 +389,7 @@ void OGLpoints::init(renderer* ren_) {
   std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
   std::cout << "\tuniform: aspect_location=" << aspect_location << '\n';
+  #endif
   glBindVertexArray(0);
 }
 
@@ -377,8 +407,11 @@ void OGLControlPoints::init(renderer* ren_) {
     view_matrix_location = glGetUniformLocation(shader, "view_matrix");
     aspect_location = glGetUniformLocation(shader, "aspect");
     glBindVertexArray(0);
-  } else
+  }
+  #ifndef QUIET
+  else
     std::cout << "failed to get vao\n";
+  #endif
 }
 
 
@@ -396,8 +429,10 @@ void OGLpoints::copyVBOtoDevice() {
     return;
   }
 
+  #ifndef QUIET
   if(VBOdata.size()==0)
     std::cout << "points: no data to copy to device VBO, VBOdata is empty\n";
+  #endif
 
   glBindVertexArray(vao);
 
