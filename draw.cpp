@@ -352,7 +352,7 @@ bool renderer::init(GLFWwindow* win_, object* obj_) {
   return true;
 }
 
-static void uset_callbacks(GLFWwindow* window) {
+static void unset_callbacks(GLFWwindow* window) {
   glfwSetCursorPosCallback(window, nullptr);
   glfwSetMouseButtonCallback(window, nullptr);
   glfwSetScrollCallback(window, nullptr);
@@ -363,7 +363,7 @@ static void uset_callbacks(GLFWwindow* window) {
 static void window_close_callback(GLFWwindow* window) {
   renderer* r = (renderer*)glfwGetWindowUserPointer(window);
   r->win = nullptr;
-  uset_callbacks(window);
+  unset_callbacks(window);
 }
 
 void renderer::set_callbacks(GLFWwindow* window) {

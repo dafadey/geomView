@@ -7,8 +7,16 @@
 #include "geom_view.h"
 #include "imgui_controls.h"
 
+geom_view::geom_view() {
+	iface = new imgui_interface;
+}
+
+geom_view::~geom_view() {
+	delete iface;
+}
+
 void geom_view::thread_func(geom_view* gv) {
-  imgui_interface iface;
+  imgui_interface& iface = *(gv->iface);
   iface.init();
   
   gv->obj_root = new object;
@@ -29,7 +37,7 @@ void geom_view::thread_func(geom_view* gv) {
 
   glfwSetWindowUserPointer(iface.window, (void*) &ren);
   
-  gv->initLock.unlock();
+  gv->windowCreationCV.notify_all(); // unlock main thread
   
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
@@ -77,6 +85,7 @@ void geom_view::thread_func(geom_view* gv) {
     glfwSwapBuffers(iface.window);
     glFlush();
   }
+  gv->windowCreationCV.notify_all(); // unlock main thread, it shluld be waiting for mainloop to finish by should close flag
   std::cout << "geom view thread finishes\n";
   delete gv->obj_root;
   gv->obj_root = nullptr;
@@ -86,10 +95,10 @@ void geom_view::thread_func(geom_view* gv) {
 }
 
 void geom_view::init() {
-  initLock.try_lock();
   std::thread th(geom_view::thread_func, this);
   th.detach();
-  initLock.lock();
+  std::unique_lock<std::mutex> ul(windowCreationLock);
+  windowCreationCV.wait(ul);
 }
 
 void geom_view::init(const std::vector<std::string>& filenames_) {
@@ -126,3 +135,13 @@ void geom_view::setCallBack(void* data, void (*callback)(void*, std::vector<std:
   controlPointMoved = callback;
   callbackData = data;
 }
+
+#ifdef WIN32
+HWND geom_view::getNativeWin32Handler() {
+	return iface->nativeMSWindowHandler;
+}
+
+void geom_view::setParentWin32Handler(HWND _parentMSWindowHandler) {
+	iface->parentMSWindowHandler = _parentMSWindowHandler;
+}
+#endif

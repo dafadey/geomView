@@ -2,6 +2,9 @@
 
 #include <vector>
 #include <string>
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -27,10 +30,7 @@ struct mainwin_config {
 };
 
 struct imgui_interface {
-
   GLFWwindow* window{};
-  
   bool init();
   void close();
-
 };

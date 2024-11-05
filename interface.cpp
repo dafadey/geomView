@@ -2,6 +2,13 @@
 #include <iostream>
 #include <array>
 
+#ifdef WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#define GLFW_NATIVE_INCLUDE_NONE
+#include <GLFW/glfw3native.h>
+#endif
+
 static void glfw_error_callback(int error, const char* description)
 {
     std::cerr << "Glfw Error " << error << ": " << description << '\n' << std::flush;
@@ -107,7 +114,12 @@ bool imgui_interface::init() {
     std::cerr << "interface::init: ERROR: failed init glfw\n";
     return false;
   }
-      
+#ifdef WIN32
+  if (parentMSWindowHandler) {
+	  glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+	  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  }
+#endif      
   // GL 3.2 + GLSL 150
   const char* glsl_version = "#version 150";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -141,6 +153,22 @@ bool imgui_interface::init() {
     std::cerr << "interface::init: ERROR: failed to create glfw window\n";
     return false;
   }
+
+#ifdef WIN32
+  if (parentMSWindowHandler)
+  {
+	  glfwSetWindowAttrib(window, GLFW_DECORATED, false);
+	  glfwSetWindowAttrib(window, GLFW_VISIBLE, false);
+	  nativeMSWindowHandler = glfwGetWin32Window(window);
+	  SetParent(nativeMSWindowHandler, parentMSWindowHandler);
+	  long style = GetWindowLong(nativeMSWindowHandler, GWL_STYLE);
+	  style &= ~WS_POPUP;
+	  style |= WS_CHILDWINDOW;
+	  SetWindowLong(nativeMSWindowHandler, GWL_STYLE, style);
+	  ShowWindow(nativeMSWindowHandler, SW_SHOW);
+  }
+#endif
+
   glfwSetWindowPos(window, mainwin_conf.posx, mainwin_conf.posy);
 
   glfwMakeContextCurrent(window);
