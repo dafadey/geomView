@@ -28,6 +28,10 @@ std::list<object*>::const_iterator object::addChild(std::list<object*>::const_it
   return m_children.insert(it, c);
 }
 
+void object::removeAllChildren() {
+  m_children.clear();
+}
+
 void object::removeChild(object* c) {
   m_children.remove(c);
 }
@@ -37,6 +41,10 @@ void object::removeChild(std::list<object*>::const_iterator it) {
 }
 
 const std::list<object*>& object::children() const {
+  return m_children;
+}
+
+std::list<object*>& object::children() {
   return m_children;
 }
 
@@ -67,7 +75,7 @@ void object::setItemsVisible(bool setting)
     item->visible = setting;
 }
 
-bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
+object* load_objects(object* obj_root, const std::string& file, renderer* ren) {
   std::ifstream ini(file.c_str());
   std::string line;
 
@@ -139,14 +147,14 @@ bool load_objects(object* obj_root, const std::string& file, renderer* ren) {
   }
   if(output->children().size()) {
     obj_root->addChild(output);
-    return true;
+    return output;
   } else {
     delete output;
-    return false;
+    return nullptr;
   }
 }
 
-static bool reload(object* in_obj, std::string& filename, renderer* ren) {
+bool reload_objects(object* in_obj, const std::string& filename, renderer* ren) {
   std::ifstream ini(filename.c_str());
   std::string line;
 
@@ -156,10 +164,12 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
   OGLlines* lines{};
   OGLpoints* points{};
   object* obj{};
-  auto last_found = in_obj->children().begin();
+  std::list<object*>::const_iterator last_found =  in_obj->children().begin();
   std::set<object*> objects_to_remove;
-  if(!in_obj->children().size())
+  if(!in_obj->children().size()) {
+    std::cout << in_obj->name << " has no children, skipping reload\n";
     return false;
+  }
   for(auto o : in_obj->children())
     objects_to_remove.insert(o);
   
@@ -209,11 +219,14 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
         last_found = in_obj->addChild(last_found, obj);
       }
       #ifndef QUIET
-      std::cout << "\treloading group " << obj->name << '\n';
+      std::cout << "\treloading group " << obj->name << " type " << tokens[0] << '\n';
       #endif
       triangles = dynamic_cast<OGLtriangles*>(obj->item);
       lines = dynamic_cast<OGLlines*>(obj->item);
       points = dynamic_cast<OGLpoints*>(obj->item);
+      #ifndef QUIET
+      std::cout << "\thave " << (points ? "points " : "") << (lines ? "lines " : "") << (triangles ? "triangles " : "") << '\n';
+      #endif
       obj->item->clear();
     } else {
       auto vects = split_vectors(line_no_spaces);
@@ -257,10 +270,63 @@ static bool reload(object* in_obj, std::string& filename, renderer* ren) {
 void reload(object* obj_root, renderer* ren) {
   std::vector<object*> children_to_remove;
   for(object* c : obj_root->children()) {
+    #ifndef QUIET
     std::cout << "reloading file " << c->name << '\n';
-    if(!reload(c, c->name, ren))
+    #endif
+    if(!reload_objects(c, c->name, ren))
       children_to_remove.push_back(c);
   }
   for(auto c : children_to_remove)
     obj_root->removeChild(c);
+}
+
+bool reload_files(object* obj_root, renderer* ren, const std::vector<std::pair<std::string, bool>>& files) {
+  if(!files.size())
+  {
+    ::reload(obj_root, ren);
+    return true;
+  }
+  
+  std::map<std::string, object*> listed; // objects to remove;
+  
+  std::list<object*> new_ordered_list;
+  
+  for(object* c : obj_root->children())
+    listed[c->name] = c;
+  
+  for(const auto& file : files) {
+    auto it = listed.find(file.first);
+    if(it != listed.end()) {
+      if(file.second == true)
+        reload_objects(it->second, file.first, ren);
+      new_ordered_list.push_back(it->second);
+    }
+    else {
+      auto new_obj = load_objects(obj_root, file.first, ren);
+      if(new_obj)
+        new_ordered_list.push_back(new_obj);
+    }
+    listed.erase(file.first);
+  }
+
+  obj_root->removeAllChildren();
+  for(auto c : new_ordered_list)
+    obj_root->addChild(c);
+    
+  return true;
+}
+
+bool changeVisibility_for_files(object* obj_root, renderer* ren, const std::vector<std::pair<std::string, bool>>& files) {
+  std::map<std::string, object*> items; // objects to remove;
+  
+  for(object* c : obj_root->children())
+    items[c->name] = c;
+  
+  for(const auto& file : files) {
+    auto it = items.find(file.first);
+    if(it != items.end())
+      it->second->setItemsVisible(file.second);
+  }
+
+  return true;
 }

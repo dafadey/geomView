@@ -149,7 +149,26 @@ namespace ImGui {
 
   bool DoObject(object* obj) {
     if (obj->children().size()) {
-      if (ImGui::TreeNode(obj->name.c_str())) {
+      if(obj->parent && obj->parent->children().size()) {
+        PushID(reinterpret_cast<size_t>(obj));
+        if(*obj->parent->children().begin() != obj) {
+          if(Button("^")) {
+            std::list<object*> new_list;
+            new_list.push_back(obj);
+            for(object*& c : obj->parent->children())
+            {
+              if(c != obj)
+                new_list.push_back(c);
+            }
+            obj->parent->children() = new_list;
+          } 
+        } else
+          Button("x");
+        SameLine();
+        PopID();
+      }
+      bool expnd = ImGui::TreeNode(obj->name.c_str());
+      if (expnd) {
         if(Button(obj->visible ? "untick" : "tick"))
           obj->setItemsVisible(!obj->visible);
         SameLine();

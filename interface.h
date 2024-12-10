@@ -31,6 +31,11 @@ struct mainwin_config {
 
 struct imgui_interface {
   GLFWwindow* window{};
+#ifdef WIN32
+  HWND nativeMSWindowHandler = 0;
+  HWND parentMSWindowHandler = 0;
+#endif
+  
   bool init();
   void close();
 };

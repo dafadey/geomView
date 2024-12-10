@@ -25,12 +25,12 @@ struct MSVC_EXPORT geom_view {
   void* callbackData {nullptr};
 
 private:
-  std::vector<std::string> filenames;
+  std::vector<std::pair<std::string, bool>> files; //this is used to pass data to another thread and protected with reloadLock
   std::mutex windowCreationLock;
   std::condition_variable windowCreationCV;
   std::mutex reloadLock;
   bool reloadFlag {false};
-  void init();
+  bool changeVisibilityFlag {false};
   
 public:
   geom_view();
@@ -43,8 +43,27 @@ public:
   void setParentWin32Handler(HWND parentMSWindowHandler);
 #endif
 
+  void close();
+  void init();
   void init(const std::string& filename);
   void init(const std::vector<std::string>& filenames);
+
+  //reloads all
   void reload();
+
+  //keeps all mentioned if flag is false
+  //deletes all previously loaded but not mentioned
+  //reloads specified if flag is true
+  void reload(const std::vector<std::pair<std::string, bool>>& files);
+  
+  //sets visibility for listed
+  //does not modify those not listed
+  void visibilities(const std::vector<std::pair<std::string, bool>>& vis);
+  
   void setCallBack(void*, void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z));
+
+  void centerCamera();
+  
+  void resetCamera();
+  
 };

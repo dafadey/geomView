@@ -11,8 +11,8 @@ namespace FSNAMESPACE {
 namespace filesystem {
   
   static std::string SFW(const std::wstring& in) {
-    char tmp[113];
-    std::wcstombs(tmp, in.c_str(), 111);
+    char tmp[MAXSTRING];
+    std::wcstombs(tmp, in.c_str(), MAXSTRING);
     return std::string(tmp);
   }
 

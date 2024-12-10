@@ -199,4 +199,5 @@ void imgui_interface::close() {
 
   glfwDestroyWindow(window);
   glfwTerminate();
+  window = nullptr;
 }

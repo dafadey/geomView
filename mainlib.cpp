@@ -28,10 +28,13 @@ void geom_view::thread_func(geom_view* gv) {
   ren.controlPointMoved = gv->controlPointMoved;
   ren.callbackData = gv->callbackData;
   
-  for(const auto& filename : gv->filenames) {
-    if(!filename.empty())
-      load_objects(gv->obj_root, filename.c_str(), &ren);
+  gv->reloadLock.lock();
+  for(const auto& file : gv->files) {
+    if(!file.first.empty())
+      load_objects(gv->obj_root, file.first.c_str(), &ren);
   }
+  gv->files.clear();
+  gv->reloadLock.unlock();
 
   ren.reset_camera();
 
@@ -45,12 +48,17 @@ void geom_view::thread_func(geom_view* gv) {
     
     gv->reloadLock.lock();
     if(gv->reloadFlag) {
+      std::cout << "files size is " << gv->files.size() << '\n';
       gv->reloadFlag = false;
-      ::reload(gv->obj_root, gv->ren_ptr);
+      reload_files(gv->obj_root, gv->ren_ptr, gv->files);
     }
+    if(gv->changeVisibilityFlag) {
+      gv->changeVisibilityFlag = false;
+      changeVisibility_for_files(gv->obj_root, gv->ren_ptr, gv->files);
+    }
+    gv->files.clear();
     gv->reloadLock.unlock();
 
-    
     ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
     if(ren.nocallbacks)
       glfwSetScrollCallback(iface.window, ImGui_ImplGlfw_ScrollCallback);
@@ -85,26 +93,39 @@ void geom_view::thread_func(geom_view* gv) {
     glfwSwapBuffers(iface.window);
     glFlush();
   }
-  gv->windowCreationCV.notify_all(); // unlock main thread, it shluld be waiting for mainloop to finish by should close flag
-  std::cout << "geom view thread finishes\n";
   delete gv->obj_root;
   gv->obj_root = nullptr;
   delete gv->ren_ptr;
   gv->ren_ptr = nullptr;
   iface.close();
+  gv->windowCreationCV.notify_all(); // unlock main thread, it should be waiting for mainloop to finish by should close flag
+  std::cout << "geom view thread finishes\n";
 }
 
 void geom_view::init() {
+  if(!iface || iface->window)
+    return;
   std::thread th(geom_view::thread_func, this);
   th.detach();
   std::unique_lock<std::mutex> ul(windowCreationLock);
   windowCreationCV.wait(ul);
 }
 
+void geom_view::close() {
+  if(!iface)
+    return;
+	glfwSetWindowShouldClose(iface->window, 1);
+  glfwPostEmptyEvent();
+  std::unique_lock<std::mutex> ul(windowCreationLock);
+  windowCreationCV.wait(ul);
+}
+
 void geom_view::init(const std::vector<std::string>& filenames_) {
-  filenames.clear();
+  reloadLock.lock();
+  files.clear();
   for(const auto& fn : filenames_)
-    filenames.push_back(fn);
+    files.push_back(std::make_pair(fn, true));
+  reloadLock.unlock();
   init();
 }
 
@@ -127,6 +148,26 @@ void geom_view::reload() {
   //::reload(obj_root, ren_ptr);
 }
 
+void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_) {
+  if(!ren_ptr)
+    init();
+  reloadLock.lock();
+  reloadFlag = true;
+  files = files_;
+  reloadLock.unlock();
+  glfwPostEmptyEvent();
+}
+
+void geom_view::visibilities(const std::vector<std::pair<std::string, bool>>& files_) {
+  if(!ren_ptr)
+    init();
+  reloadLock.lock();
+  changeVisibilityFlag = true;
+  files = files_;
+  reloadLock.unlock();
+  glfwPostEmptyEvent();
+}
+
 void geom_view::setCallBack(void* data, void (*callback)(void*, std::vector<std::string>& sId, double x, double y, double z)) {
   if(ren_ptr) {
     ren_ptr->controlPointMoved = callback;
@@ -135,6 +176,18 @@ void geom_view::setCallBack(void* data, void (*callback)(void*, std::vector<std:
   controlPointMoved = callback;
   callbackData = data;
 }
+
+void geom_view::centerCamera() {
+  if(ren_ptr)
+    ren_ptr->center_camera();
+  glfwPostEmptyEvent();
+}
+
+void geom_view::resetCamera() {
+  if(ren_ptr)
+    ren_ptr->reset_camera();
+  glfwPostEmptyEvent();
+}  
 
 #ifdef WIN32
 HWND geom_view::getNativeWin32Handler() {
