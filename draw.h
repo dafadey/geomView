@@ -17,7 +17,7 @@
 #include "vectors.h"
 
 #ifdef GLEWINIT_INTERNAL
-  extern GLenum glewInit(void);
+  extern GLenum __stdcall glewInit(void);
 #endif
 
 struct GLFWwindow;
