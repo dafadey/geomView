@@ -24,6 +24,8 @@ int main() {
   geom_view gv;
   gv.init();
 
+  bool first_time_relf = true;
+
   std::string cmd="";
   while(cmd != "exit") {
     getline(std::cin, cmd);
@@ -44,7 +46,8 @@ int main() {
       std::cout << "file: " << f.first << ' ' << (f.second ? 'V' : 'X') << '\n';
     
     if(items[0] == "relf") {
-        gv.reload(files);
+        gv.reload(files, first_time_relf);
+        first_time_relf = false;
     }
     if(items[0] == "rel")
         gv.reload();

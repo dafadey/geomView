@@ -26,6 +26,7 @@ struct MSVC_EXPORT geom_view {
 
 private:
   std::vector<std::pair<std::string, bool>> files; //this is used to pass data to another thread and protected with reloadLock
+  bool resetCameraRequest{false}; // this is used to request for reset camera after reload 
   std::mutex windowCreationLock;
   std::condition_variable windowCreationCV;
   std::mutex reloadLock;
@@ -49,12 +50,12 @@ public:
   void init(const std::vector<std::string>& filenames);
 
   //reloads all
-  void reload();
+  void reload(bool resetCamera = false);
 
   //keeps all mentioned if flag is false
   //deletes all previously loaded but not mentioned
   //reloads specified if flag is true
-  void reload(const std::vector<std::pair<std::string, bool>>& files);
+  void reload(const std::vector<std::pair<std::string, bool>>& files, bool resetCamera = false);
   
   //sets visibility for listed
   //does not modify those not listed

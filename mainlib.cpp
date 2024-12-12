@@ -58,6 +58,10 @@ void geom_view::thread_func(geom_view* gv) {
       changeVisibility_for_files(gv->obj_root, gv->ren_ptr, gv->files);
       gv->files.clear();
     }
+    if(gv->resetCameraRequest) {
+      gv->resetCameraRequest = false;
+      gv->ren_ptr->reset_camera();
+    }
     gv->reloadLock.unlock();
 
     ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
@@ -136,7 +140,7 @@ void geom_view::init(const std::string& filename) {
   init(filenames);
 }
 
-void geom_view::reload() {
+void geom_view::reload(bool resetCam) {
   if(!ren_ptr)
     init();
   reloadLock.lock();
@@ -146,6 +150,7 @@ void geom_view::reload() {
     for(auto& item : obj_root->children())
       files.push_back(std::make_pair(item->name, true));
   }
+  resetCameraRequest = resetCam;
   reloadLock.unlock();
   glfwPostEmptyEvent();  
 
@@ -154,12 +159,13 @@ void geom_view::reload() {
   //::reload(obj_root, ren_ptr);
 }
 
-void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_) {
+void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_, bool resetCam) {
   if(!ren_ptr)
     init();
   reloadLock.lock();
   reloadFlag = true;
   files = files_;
+  resetCameraRequest = resetCam;
   reloadLock.unlock();
   glfwPostEmptyEvent();
 }
