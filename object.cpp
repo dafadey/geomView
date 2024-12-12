@@ -281,12 +281,6 @@ void reload(object* obj_root, renderer* ren) {
 }
 
 bool reload_files(object* obj_root, renderer* ren, const std::vector<std::pair<std::string, bool>>& files) {
-  if(!files.size())
-  {
-    ::reload(obj_root, ren);
-    return true;
-  }
-  
   std::map<std::string, object*> listed; // objects to remove;
   
   std::list<object*> new_ordered_list;
