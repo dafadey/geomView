@@ -51,12 +51,13 @@ void geom_view::thread_func(geom_view* gv) {
       std::cout << "files size is " << gv->files.size() << '\n';
       gv->reloadFlag = false;
       reload_files(gv->obj_root, gv->ren_ptr, gv->files);
+      gv->files.clear();
     }
     if(gv->changeVisibilityFlag) {
       gv->changeVisibilityFlag = false;
       changeVisibility_for_files(gv->obj_root, gv->ren_ptr, gv->files);
+      gv->files.clear();
     }
-    gv->files.clear();
     gv->reloadLock.unlock();
 
     ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
@@ -105,9 +106,9 @@ void geom_view::thread_func(geom_view* gv) {
 void geom_view::init() {
   if(!iface || iface->window)
     return;
+  std::unique_lock<std::mutex> ul(windowCreationLock);
   std::thread th(geom_view::thread_func, this);
   th.detach();
-  std::unique_lock<std::mutex> ul(windowCreationLock);
   windowCreationCV.wait(ul);
 }
 
@@ -140,6 +141,11 @@ void geom_view::reload() {
     init();
   reloadLock.lock();
   reloadFlag = true;
+  files.clear();
+  if(obj_root) {
+    for(auto& item : obj_root->children())
+      files.push_back(std::make_pair(item->name, true));
+  }
   reloadLock.unlock();
   glfwPostEmptyEvent();  
 
