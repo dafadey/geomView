@@ -4,10 +4,66 @@
 #include "interface.h"
 #include "object.h"
 #include "imgui_controls.h"
+#include "fb2way.h"
+#include "glass_buttons.h"
+#include "buttons.png.inl"
+#include "geom_view.h"
+
+void proc_xyz(int id, glass_button::eaction act, void* dat) {
+  renderer* ren = (renderer*) dat;
+  //std::cout << "xyz button " << id << " experienced action " << act << " rnd=" << rand() << '\n';
+  vec3f dir = ren->fp_pos - ren->cam_pos;
+  vec3f up = ren->cam_up;
+  normalize(dir);
+  normalize(up);
+  if(id==0) {
+    dir = vec3f{1,0,0};
+    up = vec3f{0,1,0};
+  }
+  if(id==1) {
+    dir = vec3f{-1,0,0};
+    up = vec3f{0,1,0};
+  }
+  if(id==2) {
+    dir = vec3f{0,1,0};
+    up = vec3f{1,0,0};
+  }
+  if(id==3) {
+    dir = vec3f{0,-1,0};
+    up = vec3f{1,0,0};
+  }
+  if(id==4) {
+    dir = vec3f{0,0,1};
+    up = vec3f{1,0,0};
+  }
+  if(id==5) {
+    dir = vec3f{0,0,-1};
+    up = vec3f{1,0,0};
+  }
+  //rotate 90
+  if(id==6)
+    up = cross_prod(up, dir);
+  if(id==7)
+    up = cross_prod(dir, up);
+  //center and reset
+  if(id==8)
+    ren->center_camera();
+  if(id==9)
+    ren->reset_camera();
+  //background color
+  if(id==10)
+    ren->need_bg_color_picker = !ren->need_bg_color_picker;
+
+  if(id < 8 && dir*dir) {
+    ren->cam_pos = ren->fp_pos - std::sqrt((ren->cam_pos - ren->fp_pos) * (ren->cam_pos - ren->fp_pos)) * dir;
+    ren->cam_up = up;
+  }
+  glfwPostEmptyEvent();
+}
 
 int main(int argc, char* argv[]) {
   std::cout << "Hallo!\n";
-    
+
   imgui_interface iface;
   iface.init();
     
@@ -22,43 +78,26 @@ int main(int argc, char* argv[]) {
   ren.reset_camera();
 
   glfwSetWindowUserPointer(iface.window, (void*) &ren);
-    
+  
+  fb2way fb2;
+  
+  int wx, wy;
+  glfwGetWindowSize(iface.window, &wx, &wy);
+  fb2.init(wx, wy);
+  
+  glass_buttons btns(iface.window);
+  btns.init(buttons_png, buttons_png_len);
+  //btns.init(nullptr, 0);
+  btns.bgtex = fb2.fb_texture;
+  
+  for(int i=0;i<11;i++)
+    btns.addButton(glass_button(i, 10+(10+32)*i, 10, 32, 32, 32*i, 0, 32*(i+1), 32, proc_xyz, &ren));
+  
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
-    //glfwPollEvents();
-    ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
-    if(ren.nocallbacks)
-      glfwSetScrollCallback(iface.window, ImGui_ImplGlfw_ScrollCallback);
-    else
-      ren.set_callbacks(iface.window);
-
-    static int counter{0};
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::ObjectsControl(obj_root, &ren);
-
-    ImGui::Begin("camera");
-    ImGui::CameraControl(&ren);
-
-    ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::Text("Memory: %d Mb", obj_root->memory() /1024/1024);
-    ImGui::End();
-
-    ImGui::Render();
-
-    glClearColor(ren.bg_color[0], ren.bg_color[1], ren.bg_color[2], 1.);
-    //glClearColor(1., 1., 1., 1.);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //int display_w, display_h;
-    //glfwGetFramebufferSize(ren.win, &display_w, &display_h);
-    //glViewport(0, 0, display_w, display_h);
-    ren.render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    mainloop_pipeline(&btns, &fb2, &ren, iface.window, obj_root);
     glfwSwapBuffers(iface.window);
-    glFlush();
+    //glFlush();
   }
   delete obj_root;
   iface.close();

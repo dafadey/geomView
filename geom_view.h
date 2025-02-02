@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 #include <mutex>
@@ -18,6 +20,8 @@ struct imgui_interface;
 #endif
 
 struct MSVC_EXPORT geom_view {
+  enum eUIFLAGS{IMGUI_CAM_CONTROL=1, IMGUI_OBJECT_CONTROL=2, NATIVE_CAM_CONTROL=4};
+  
   renderer* ren_ptr{nullptr};
   object* obj_root{nullptr};
   imgui_interface* iface;
@@ -37,6 +41,8 @@ public:
   geom_view();
   ~geom_view();
 	
+  int UIflags = eUIFLAGS::IMGUI_CAM_CONTROL | eUIFLAGS::IMGUI_OBJECT_CONTROL | eUIFLAGS::NATIVE_CAM_CONTROL;
+  
   static void thread_func(geom_view*);
 
 #ifdef WIN32

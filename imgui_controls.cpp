@@ -29,7 +29,7 @@ extern mainwin_config mainwin_conf;
 
 static void _update_camera(const vec3f& dir, const vec3f& up, renderer* ren) {
   if(dir*dir) {
-    ren->cam_pos = ren->fp_pos + std::sqrt((ren->cam_pos - ren->fp_pos) * (ren->cam_pos - ren->fp_pos)) * dir;
+    ren->cam_pos = ren->fp_pos - std::sqrt((ren->cam_pos - ren->fp_pos) * (ren->cam_pos - ren->fp_pos)) * dir;
     ren->cam_up = up;
   }
 }
@@ -440,12 +440,12 @@ namespace ImGui {
     SameLine();
     if(Button("+90")) {
       modified = true;
-      up = cross_prod(dir,up);
+      up = cross_prod(up,dir);
     }
     SameLine();
     if(Button("-90")) {
       modified = true;
-      up = cross_prod(up,dir);
+      up = cross_prod(dir,up);
     }
     
     if(modified)

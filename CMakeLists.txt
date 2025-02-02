@@ -35,7 +35,7 @@ endif()
 
 set(imgui_sources imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp) 
 
-set(common_sources shaderRAMfs.cpp.inl draw.cpp geo.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp ${imgui_sources})
+set(common_sources buttons.png.inl shaderRAMfs.cpp.inl glass_buttons.cpp fb2way.cpp shaders.cpp draw.cpp geo.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp ${imgui_sources})
 
 set(sources_exec main.cpp)
 
@@ -80,12 +80,20 @@ add_library(commonArch STATIC ${common_sources})
 add_dependencies(${execTarget} commonArch)
 add_dependencies(${dylibTarget} commonArch)
 
-add_executable(codegen codegen.cpp)
+add_executable(charcodegen codegen.cpp)
 
 add_custom_command(OUTPUT shaderRAMfs.cpp.inl
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                   COMMAND codegen ${shaders} > shaderRAMfs.cpp.inl
-                   DEPENDS codegen ${shaders}
+                   COMMAND charcodegen ${shaders} > shaderRAMfs.cpp.inl
+                   DEPENDS charcodegen ${shaders}
+                   VERBATIM)
+
+add_executable(charcodegenbin codegenbin.cpp)
+
+add_custom_command(OUTPUT buttons.png.inl
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   COMMAND charcodegenbin buttons.png > buttons.png.inl
+                   DEPENDS charcodegenbin buttons.png
                    VERBATIM)
 
 set(OpenGL_GL_PREFERENCE LEGACY)
@@ -94,6 +102,12 @@ find_package(OpenGL REQUIRED)
 message("OPENGL_LIBRARIES=${OPENGL_LIBRARIES}")
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
+#find_package(PNG REQUIRED)
+
+message("libpng: ${PNG_INCLUDE_DIR}")
+message("libpng lib: ${PNG_LIBRARY}")
+message("libpng lib: ${ZLIB_LIBRARY}")
+
 message("GLEW: ${GLEW_INCLUDE_DIR}")
 message("glfw3: ${glfw3_DIR}")
 
@@ -113,7 +127,7 @@ endif()
 
 message("glfw3_INCLUDE_DIR: ${glfw3_INCLUDE_DIR}")
 
-include_directories(imgui imgui/backends ${GLEW_INCLUDE_DIR} ${glfw3_INCLUDE_DIR})
+include_directories(imgui imgui/backends ${GLEW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${glfw3_INCLUDE_DIR})
 
 if (MSVC)
 	set(GLEW_LIBS "${GLEW_DIR}/../../libglew32.lib")
@@ -124,22 +138,24 @@ endif()
 message("GLEW_LIBS=${GLEW_LIBS}")
 
 message("GLEW_STATIC_LIBRARIES=${GLEW_STATIC_LIBS}")
-target_link_libraries(${execTarget} PUBLIC commonArch ${OPENGL_LIBRARIES} glfw ${GLEW_LIBS})
-target_link_libraries(${dylibTarget} LINK_PUBLIC commonArch ${OPENGL_LIBRARIES} glfw ${GLEW_LIBS})
+target_link_libraries(${execTarget} PUBLIC commonArch ${OPENGL_LIBRARIES} glfw ${GLEW_LIBS} ${PNG_LIBRARY} ${ZLIB_LIBRARY})
+target_link_libraries(${dylibTarget} LINK_PUBLIC commonArch ${OPENGL_LIBRARIES} glfw ${GLEW_LIBS} ${PNG_LIBRARY} ${ZLIB_LIBRARY})
 
 message("CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 
-add_custom_command(
-	OUTPUT lib${libNAME}.lib
-	COMMAND lib.exe /OUT:${CMAKE_BINARY_DIR}/$<CONFIG>/lib${libNAME}.lib $<TARGET_FILE:commonArch> $<TARGET_FILE:${libTarget}> ${GLEW_LIBS} ${glfw3_LIBRARY}
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	DEPENDS commonArch ${PUB_HEADERS} ${sources_lib}
-	COMMENT "linking static library lib${libNAME}.lib"
-	)
+if(MSVC)
+    add_custom_command(
+        OUTPUT lib${libNAME}.lib
+        COMMAND lib.exe /OUT:${CMAKE_BINARY_DIR}/$<CONFIG>/lib${libNAME}.lib $<TARGET_FILE:commonArch> $<TARGET_FILE:${libTarget}> ${GLEW_LIBS} ${glfw3_LIBRARY} ${PNG_LIBRARY} ${ZLIB_LIBRARY}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        DEPENDS commonArch ${PUB_HEADERS} ${sources_lib}
+        COMMENT "linking static library lib${libNAME}.lib"
+        )
 
-add_custom_target(combinedLibGenerator ALL
-    DEPENDS lib${libNAME}.lib
-)
+    add_custom_target(combinedLibGenerator ALL
+        DEPENDS lib${libNAME}.lib
+    )
+endif()
 
 add_library(combinedLib STATIC IMPORTED)
 set_property(TARGET combinedLib PROPERTY IMPORTED_LOCATION lib${libNAME}.lib)
@@ -151,8 +167,8 @@ if(WIN32)
     target_link_libraries(${execTarget} PUBLIC gdi32.lib)
     target_link_libraries(${dylibTarget} LINK_PUBLIC gdi32.lib)
 else()
-    target_link_libraries(${execTarget} PUBLIC -lrt -lm -ldl)
-    target_link_libraries(${dylibTarget} LINK_PUBLIC -lrt -lm -ldl)
+    target_link_libraries(${execTarget} PUBLIC -lrt -lm -ldl -lpng)
+    target_link_libraries(${dylibTarget} LINK_PUBLIC -lrt -lm -ldl -lpng)
 endif()
 
 list(APPEND install_targets ${execTarget})

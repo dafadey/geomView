@@ -1,7 +1,7 @@
 TARGET_EXEC := geom_view
 TARGET_LIB := libgeom_view
 
-SOURCES := geo.cpp draw.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp
+SOURCES := glass_buttons.cpp fb2way.cpp shaders.cpp geo.cpp draw.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp
 
 SOURCES_IMGUI := imgui.cpp imgui_draw.cpp imgui_tables.cpp imgui_widgets.cpp 
 
@@ -14,10 +14,10 @@ SHADERS := sha_circle.vs sha_line.vs sha_vector.vs sha.vs sha.fs sha_line.fs sha
 OBJS := $(addprefix obj/, $(SOURCES_ALL:%.cpp=%.o))
 
 ifeq "$(OS)" "Windows_NT"
-	libs := -lopengl32 -lglew32 -lglfw3 -lgdi32
+	libs := -lopengl32 -lglew32 -lglfw3 -lgdi32 -lpng
 	soext := dll
 else
-	libs := -lGL -lGLEW -lglfw -lrt -lm -ldl
+	libs := -lGL -lGLEW -lglfw -lrt -lm -ldl -lpng
 	soext := so
 endif
 
