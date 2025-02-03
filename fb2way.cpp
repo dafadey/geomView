@@ -138,7 +138,11 @@ fb2way::~fb2way() {
     glDeleteTextures(1, &fb_zs_texture);
 }
 
-void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWwindow* window, object* obj_root, int UIflags) {
+void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWwindow* window, object* obj_root, geom_view::UIappearance* appearance) {
+    geom_view::UIappearance default_UIappearance;
+    if(!appearance)
+      appearance = &default_UIappearance;
+    
     renderer& ren = *renptr;
 
     if(fb2) {
@@ -164,10 +168,10 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWw
     
     ImGui::NewFrame();
 
-    if(UIflags & geom_view::eUIFLAGS::IMGUI_OBJECT_CONTROL)
+    if(appearance->imgui_object_control)
       ImGui::ObjectsControl(obj_root, &ren);
 
-    if(UIflags & geom_view::eUIFLAGS::IMGUI_CAM_CONTROL) {
+    if(appearance->imgui_cam_control) {
       ImGui::Begin("camera");
       ImGui::CameraControl(&ren);
       ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -196,7 +200,7 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWw
       fb2->render();
     }
     
-    if(UIflags & geom_view::eUIFLAGS::NATIVE_CAM_CONTROL)
+    if(appearance->native_cam_control)
     {
       if(btns) {
         btns->process();

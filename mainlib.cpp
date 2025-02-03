@@ -83,7 +83,7 @@ void geom_view::thread_func(geom_view* gv) {
     }
     gv->reloadLock.unlock();
 
-    mainloop_pipeline(&btns, &fb2, &ren, iface.window, gv->obj_root, gv->UIflags);
+    mainloop_pipeline(&btns, &fb2, &ren, iface.window, gv->obj_root, &gv->appearance);
 
     glfwSwapBuffers(iface.window);
 

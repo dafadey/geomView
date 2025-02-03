@@ -20,7 +20,11 @@ struct imgui_interface;
 #endif
 
 struct MSVC_EXPORT geom_view {
-  enum eUIFLAGS{IMGUI_CAM_CONTROL=1, IMGUI_OBJECT_CONTROL=2, NATIVE_CAM_CONTROL=4};
+  struct UIappearance {
+    bool imgui_cam_control{true};
+    bool imgui_object_control{true};
+    bool native_cam_control{true};
+  };
   
   renderer* ren_ptr{nullptr};
   object* obj_root{nullptr};
@@ -40,8 +44,8 @@ private:
 public:
   geom_view();
   ~geom_view();
-	
-  int UIflags = eUIFLAGS::IMGUI_CAM_CONTROL | eUIFLAGS::IMGUI_OBJECT_CONTROL | eUIFLAGS::NATIVE_CAM_CONTROL;
+
+  UIappearance appearance{};
   
   static void thread_func(geom_view*);
 
