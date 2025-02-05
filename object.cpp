@@ -306,7 +306,7 @@ bool reload_files(object* obj_root, renderer* ren, const std::vector<std::pair<s
   obj_root->removeAllChildren();
   for(auto c : new_ordered_list)
     obj_root->addChild(c);
-    
+  
   return true;
 }
 

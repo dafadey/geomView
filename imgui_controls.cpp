@@ -236,11 +236,15 @@ namespace ImGui {
         if (d.empty())
           continue;
         newpath << d << path_delimiter;
+        PushID(dir_id);
         if(Button(SFW(d).c_str())) {
           selected = -1;
           pressed = true;
+          PopID();
           break;
         }
+        PopID();
+        
         if(dir_id + 2 == dirs.size())
           continue;
         SameLine();
@@ -255,9 +259,11 @@ namespace ImGui {
       
       std::vector<std::pair<std::wstring, bool>> pathes;
       
-      for (auto const& dir_entry : FSNAMESPACE::filesystem::directory_iterator(path))
-        pathes.push_back(std::make_pair(dir_entry.path().filename().wstring(), FSNAMESPACE::filesystem::is_directory(dir_entry)));
-
+      for (auto const& dir_entry : FSNAMESPACE::filesystem::directory_iterator(path)) {
+        try {
+          pathes.push_back(std::make_pair(dir_entry.path().filename().wstring(), FSNAMESPACE::filesystem::is_directory(dir_entry)));
+        } catch(...) {}
+      }
       std::stable_sort(pathes.begin(), pathes.end(), [](const std::pair<std::wstring, bool>& a, const std::pair<std::wstring, bool>& b)->bool {
                                                         if(a.second == b.second)
                                                           return SFW(a.first) < SFW(b.first); // inefficient but valgrind complains on that otherwise (most likelly false positive but annoying anyways)
