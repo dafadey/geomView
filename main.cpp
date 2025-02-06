@@ -10,7 +10,7 @@
 #include "geom_view.h"
 #include "tools.h"
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #include <ole2.h>
 #include <oleidl.h>
 class DragAndDrop : public IDropTarget {
@@ -46,10 +46,10 @@ HRESULT DragAndDrop::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, D
 	HDROP hdrop = (HDROP) res.hGlobal;
 	UINT file_count = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
 	for (int i = 0; i < file_count; i++) {
-  	  TCHAR szFile[MAX_PATH];
-	  DragQueryFile(hdrop, i, szFile, MAX_PATH);
+  	  wchar_t file[MAX_PATH];
+	  DragQueryFile(hdrop, i, file, MAX_PATH);
 	  if (obj_root && ren)
-	    load_objects(obj_root, SFW(szFile), ren);
+	    load_objects(obj_root, SFW(file), ren);
 	}
 
 	if (file_count && ren)
@@ -145,19 +145,16 @@ int main(int argc, char* argv[]) {
     btns.addButton(glass_button(i, 10+(10+32)*i, 10, 32, 32, 32*i, 0, 32*(i+1), 32, proc_xyz, &ren));
   
 
-  #ifdef WIN32
+  #ifdef _MSC_VER
   if (OleInitialize(NULL) != S_OK)
     std::cout << "failed to initialize COM\n";
   DragAndDrop dragAndDropTarget;
   dragAndDropTarget.obj_root = obj_root;
   dragAndDropTarget.ren = &ren;
   HWND hWnd = iface.nativeMSWindowHandler;
-  std::cout << "!!! hWnd=" << hWnd << '\n';
   auto RegDADres = RegisterDragDrop(hWnd, &dragAndDropTarget);
-  if (RegDADres == S_OK)
-	std::cout << "!!! registered drag and drop\n";
-  else
-	std::cout << "!!! register drag and drop failed: " << RegDADres << '\n';
+  if (RegDADres != S_OK)
+	std::cout << "register drag and drop failed: " << RegDADres << '\n';
   #endif
 
   while (!glfwWindowShouldClose(iface.window))  {
@@ -166,6 +163,12 @@ int main(int argc, char* argv[]) {
     glfwSwapBuffers(iface.window);
     //glFlush();
   }
+  
+  #ifdef _MSC_VER
+  RevokeDragDrop(hWnd);
+  OleUninitialize();
+  #endif
+  
   delete obj_root;
   iface.close();
 }
