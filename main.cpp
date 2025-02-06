@@ -8,6 +8,57 @@
 #include "glass_buttons.h"
 #include "buttons.png.inl"
 #include "geom_view.h"
+#include "tools.h"
+
+#ifdef WIN32
+#include <ole2.h>
+#include <oleidl.h>
+class DragAndDrop : public IDropTarget {
+  HRESULT Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override;
+  HRESULT DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
+  HRESULT DragLeave() override { return S_OK; }
+  HRESULT DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
+  HRESULT QueryInterface(REFIID riid, void** ppvObject) override { 
+	  //std::cout << "!!! QueryInterface: REFIID=" << (void*) &riid << '\n';
+	  return S_OK;
+  }
+  ULONG AddRef() override { 
+	  //std::cout << "!!! AddRef\n"; 
+	  return 1;
+  }
+  ULONG Release() override { 
+	  //std::cout << "!!! Release\n"; 
+	  return 0;
+  }
+public:
+  object* obj_root = nullptr;
+  renderer* ren = nullptr;
+};
+
+HRESULT DragAndDrop::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) {
+	//std::cout << "!!! gotcha!\n";
+	FORMATETC fmc = { CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+	STGMEDIUM res;
+	if (pDataObj->GetData(&fmc, &res) != S_OK) {
+		std::cout << "cannot get data from drop\n";
+	    return S_FALSE;
+	}
+	HDROP hdrop = (HDROP) res.hGlobal;
+	UINT file_count = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
+	for (int i = 0; i < file_count; i++) {
+  	  TCHAR szFile[MAX_PATH];
+	  DragQueryFile(hdrop, i, szFile, MAX_PATH);
+	  if (obj_root && ren)
+	    load_objects(obj_root, SFW(szFile), ren);
+	}
+
+	if (file_count && ren)
+	  ren->reset_camera();
+	
+	ReleaseStgMedium(&res);
+	return S_OK;
+}
+#endif
 
 void proc_xyz(int id, glass_button::eaction act, void* dat) {
   renderer* ren = (renderer*) dat;
@@ -93,6 +144,22 @@ int main(int argc, char* argv[]) {
   for(int i=0;i<11;i++)
     btns.addButton(glass_button(i, 10+(10+32)*i, 10, 32, 32, 32*i, 0, 32*(i+1), 32, proc_xyz, &ren));
   
+
+  #ifdef WIN32
+  if (OleInitialize(NULL) != S_OK)
+    std::cout << "failed to initialize COM\n";
+  DragAndDrop dragAndDropTarget;
+  dragAndDropTarget.obj_root = obj_root;
+  dragAndDropTarget.ren = &ren;
+  HWND hWnd = iface.nativeMSWindowHandler;
+  std::cout << "!!! hWnd=" << hWnd << '\n';
+  auto RegDADres = RegisterDragDrop(hWnd, &dragAndDropTarget);
+  if (RegDADres == S_OK)
+	std::cout << "!!! registered drag and drop\n";
+  else
+	std::cout << "!!! register drag and drop failed: " << RegDADres << '\n';
+  #endif
+
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
     mainloop_pipeline(&btns, &fb2, &ren, iface.window, obj_root);

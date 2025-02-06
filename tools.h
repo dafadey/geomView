@@ -9,6 +9,7 @@ std::vector<std::string> split_vectors(const std::string& input);
 
 vec3f make_vector(const std::string& input);
 
+std::string SFW(const std::wstring& in);
 
 template<typename Tstring, typename Tchar>
 Tstring remove_chars(const Tstring& input, Tchar c) {
@@ -27,7 +28,9 @@ std::vector<Tstring> split(const Tstring& input, const Tstring& delimiter) {
   std::vector<Tstring> out;
   while (true) {
     size_t end = input.find(delimiter, pos);
-    out.push_back(input.substr(pos, end - pos));
+    auto item = input.substr(pos, end - pos);
+    if(item.size())
+      out.push_back(item);
     pos = end + delimiter.size();
     if (end == std::string::npos)
       break;

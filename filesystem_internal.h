@@ -29,17 +29,33 @@ namespace filesystem {
       for (int i = 0; i < this->size() - 1; i++)
         out += (*this)[i] + separator;
       out += this->back();
-      return out;
+	  auto outs = SFW(out);
+	  const char* outs_c = outs.c_str();
+	  if (!file && (::GetFileAttributes((LPCWSTR)outs_c) & FILE_ATTRIBUTE_DIRECTORY))
+		out += separator;
+	  return out;
     }
 
     path(const std::wstring& s) : std::vector<std::wstring>(split(s, separator)) {}
 
     path filename() const {
-      if (this->size())
-        return path(this->back());
-      else
-        return path();
+      if (this->size()) {
+		path p(this->back());
+		p.file = true;
+        return p;
+      } else {
+		path p;
+		p.file = true;
+        return p;
+	  }
     }
+
+	bool is_root() const {
+	  return this->size() == 0;
+	}
+
+	bool file{};
+
   };
 
   struct dirEntry : public std::wstring {
@@ -50,21 +66,33 @@ namespace filesystem {
   struct directory_iterator : public std::vector<dirEntry> {
     directory_iterator(path p) {
       HANDLE hFind = INVALID_HANDLE_VALUE;
-      auto pws = p.wstring();
-      dirEntry currentDir(pws+L"\\*");
-      WIN32_FIND_DATA ffd;
-      hFind = FindFirstFile(currentDir.c_str(), &ffd);
-      if (INVALID_HANDLE_VALUE == hFind)
-        return;
-      const auto& name = std::wstring(ffd.cFileName);
-      if (name != L"." && name != L"..")
-        push_back(pws + name);
-      while (FindNextFile(hFind, &ffd) != 0) {
+	  if (p.is_root()) {
+	    DWORD dr = GetLogicalDrives();
+        for(int i = 0; i<26; i++) {
+		  if(dr & (1<<i)) {
+			std::wstring wdrletter = L"";
+			wdrletter += (wchar_t) (i+65);
+			wdrletter += L":";
+            push_back(wdrletter);
+		  }
+		}
+	  } else {
+	    auto pws = p.wstring();
+        dirEntry currentDir(pws+L"\\*");
+        WIN32_FIND_DATA ffd;
+        hFind = FindFirstFile(currentDir.c_str(), &ffd);
+        if (INVALID_HANDLE_VALUE == hFind)
+          return;
         const auto& name = std::wstring(ffd.cFileName);
         if (name != L"." && name != L"..")
-          push_back(pws + name);
-      }
-      FindClose(hFind);
+          push_back(pws + separator + name);
+        while (FindNextFile(hFind, &ffd) != 0) {
+          const auto& name = std::wstring(ffd.cFileName);
+          if (name != L"." && name != L"..")
+            push_back(pws + separator + name);
+        }
+        FindClose(hFind);
+	  }
     }
   };
 

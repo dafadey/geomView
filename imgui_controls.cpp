@@ -36,12 +36,6 @@ static void _update_camera(const vec3f& dir, const vec3f& up, renderer* ren) {
 
 static FSNAMESPACE::filesystem::path path = FSNAMESPACE::filesystem::current_path();
 
-std::string SFW(const std::wstring& in) {
-  char tmp[113];
-  std::wcstombs(tmp, in.c_str(), 111);
-  return std::string(tmp);
-}
-
 #ifndef MAXRECENTS
 #define MAXRECENT 13
 #endif
@@ -215,6 +209,9 @@ namespace ImGui {
     if(Button("reload"))
       reload(obj, ren);
     if (BeginPopupModal("open file", NULL, ImGuiWindowFlags_None)) {
+      ImVec2 rect_size = ImGui::GetItemRectSize();
+      float width = rect_size.x;
+
       static int selected=-1;
       static std::string highlightMask="";
       static std::wstring selected_file;
@@ -231,24 +228,61 @@ namespace ImGui {
       newpath << '/';
       #endif
       bool pressed = false;
-      for(int dir_id=0; dir_id<dirs.size(); dir_id++) {
-        auto& d = dirs[dir_id];
-        if (d.empty())
-          continue;
-        newpath << d << path_delimiter;
-        PushID(dir_id);
-        if(Button(SFW(d).c_str())) {
-          selected = -1;
-          pressed = true;
-          PopID();
+      int dir_id0=dirs.size()-1;
+      auto& style = ImGui::GetStyle();
+      float winPadding = style.WindowPadding.x;
+      float framePadding = style.FramePadding.x;
+      float path_buttons_length = 2. * winPadding + ImGui::CalcTextSize(SFW(path_delimiter).c_str()).x + 2.f * framePadding;
+      for(; dir_id0 >= 0; dir_id0--) {
+        path_buttons_length += ImGui::CalcTextSize(SFW(dirs[dir_id0]).c_str()).x + winPadding + 2.f * framePadding;
+        if(path_buttons_length > width)
           break;
-        }
-        PopID();
-        
-        if(dir_id + 2 == dirs.size())
-          continue;
-        SameLine();
       }
+      if(Button(SFW(path_delimiter).c_str())) { // go to ROOT
+        selected = -1;
+        pressed = true;        
+        newpath << path_delimiter;
+      }
+      if(dirs.size())
+        SameLine();
+      if(!pressed) {
+        if(dir_id0 != -1) {
+          path_buttons_length += ImGui::CalcTextSize("...").x + winPadding;
+          if(path_buttons_length > width)
+            dir_id0++;
+        }
+        if(dir_id0 > (int) dirs.size() - 1)
+          dir_id0 = dirs.size() - 2;
+        for(int dir_id=0; dir_id<dirs.size(); dir_id++) {
+          auto& d = dirs[dir_id];
+          newpath << d << path_delimiter;
+          if(dir_id == dir_id0) {
+            if(Button("...")) {
+              selected = -1;
+              pressed = true;
+              break;
+            }
+            SameLine();
+          }
+
+          if(dir_id <= dir_id0)
+            continue;
+
+          PushID(dir_id);
+          if(Button(SFW(d).c_str())) {
+            selected = -1;
+            pressed = true;
+            PopID();
+            break;
+          }
+          PopID();
+          
+          if(dir_id + 1 < dirs.size())
+            SameLine();
+        }
+      }
+      if(pressed)
+        glfwPostEmptyEvent();
       path = newpath.str();
       static char filter[128]="*";
       bool listenToFirstLetters = true;
@@ -290,18 +324,15 @@ namespace ImGui {
           if(p.second) {
             newpath.str(L"");
             auto dirs = split(path.wstring() + p.first, path_delimiter);
-            for (auto d : dirs) {
-              if (d.empty())
-                continue;
+            for (auto d : dirs)
               newpath << d << path_delimiter;
-            }
             path = newpath.str();
             selected = -1;
           }
+          glfwPostEmptyEvent();
         } 
         highlightMask = "";
       }
-      
       ImGuiIO& gio = ImGui::GetIO();
       ImGuiContext& g = *ImGui::GetCurrentContext();
       ImGuiWindow* currentWindow = g.CurrentWindow; //open popup
@@ -362,6 +393,7 @@ namespace ImGui {
             ren->reset_camera();
         }
       }
+
       EndPopup();
     }
 

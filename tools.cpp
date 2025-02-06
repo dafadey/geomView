@@ -1,5 +1,11 @@
 #include "tools.h"
 
+std::string SFW(const std::wstring& in) {
+	char tmp[333];
+	std::wcstombs(tmp, in.c_str(), 333);
+	return std::string(tmp);
+}
+
 std::vector<std::string> split_vectors(const std::string& input) {
   std::vector<std::string> output;
   std::string v;

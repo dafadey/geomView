@@ -35,17 +35,20 @@ pacman -S make
 #### 5. Install glew from MSYS2 repository:
 pacman -S mingw-w64-x86_64-glew
 
-#### 5. Get glfw3
+#### 6. Get glfw3
 Download 64bit GLFW3 binary from [glfw3 win64 binary](https://www.glfw.org/download.html)
 and put it to your home folder (typically C:\msys64\home\%USERNAME)
 
-#### 6. Install git from MSYS2 repository:
+#### 7. Install git from MSYS2 repository:
 pacman -S git
 
-#### 6. Get geomView
+#### 8. Install libpng from MSYS2 repository:
+pacman -S mingw-w64-x86_64-libpng
+
+#### 9. Get geomView
 git clone https://github.com/dafadey/geomView.git
 
-#### 7. Build:
+#### 10. Build:
 Go to to geomView folder after cloning and run the following command
 ```
 cd geomView

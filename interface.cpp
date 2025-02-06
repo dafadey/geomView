@@ -155,11 +155,11 @@ bool imgui_interface::init() {
   }
 
 #ifdef WIN32
+  nativeMSWindowHandler = glfwGetWin32Window(window);
   if (parentMSWindowHandler)
   {
 	  glfwSetWindowAttrib(window, GLFW_DECORATED, false);
 	  glfwSetWindowAttrib(window, GLFW_VISIBLE, false);
-	  nativeMSWindowHandler = glfwGetWin32Window(window);
 	  SetParent(nativeMSWindowHandler, parentMSWindowHandler);
 	  long style = GetWindowLong(nativeMSWindowHandler, GWL_STYLE);
 	  style &= ~WS_POPUP;
