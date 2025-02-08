@@ -5,7 +5,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -49,7 +49,7 @@ public:
   
   static void thread_func(geom_view*);
 
-#ifdef WIN32
+#ifdef _WIN32
   HWND getNativeWin32Handler();
   void setParentWin32Handler(HWND parentMSWindowHandler);
 #endif

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <array>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
 #define GLFW_NATIVE_INCLUDE_NONE
@@ -114,7 +114,7 @@ bool imgui_interface::init() {
     std::cerr << "interface::init: ERROR: failed init glfw\n";
     return false;
   }
-#ifdef WIN32
+#ifdef _WIN32
   if (parentMSWindowHandler) {
 	  glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 	  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -154,7 +154,7 @@ bool imgui_interface::init() {
     return false;
   }
 
-#ifdef WIN32
+#ifdef _WIN32
   nativeMSWindowHandler = glfwGetWin32Window(window);
   if (parentMSWindowHandler)
   {

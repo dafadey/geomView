@@ -60,7 +60,7 @@ namespace filesystem {
 
   struct dirEntry : public std::wstring {
     dirEntry(const std::wstring& s) : std::wstring(s) {}
-    path path() const { return path::path(*this); }
+    path path() const { return FSNAMESPACE::filesystem::path(*this); }
   };
 
   struct directory_iterator : public std::vector<dirEntry> {

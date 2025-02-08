@@ -217,14 +217,14 @@ namespace ImGui {
       static std::wstring selected_file;
       int items_in_dir=0;
       
-      #ifdef WIN32
+      #ifdef _WIN32
       const std::wstring path_delimiter = L"\\";
       #else
       const std::wstring path_delimiter = L"/";
       #endif
       auto dirs = split(path.wstring(), path_delimiter);
       std::wstringstream newpath{};
-      #ifndef WIN32
+      #ifndef _WIN32
       newpath << '/';
       #endif
       bool pressed = false;

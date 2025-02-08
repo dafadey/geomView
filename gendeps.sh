@@ -2,7 +2,11 @@ echo Generating dependencies...
 
 rm -f Makefile.deps
 
-cmd="g++ -g -fPIC -DQUIET -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends"
+if [ "${OS}" == "Windows_NT" ]; then
+	cmd="g++ -g -fPIC -municode -DNOSTDFILESYSTEM -DQUIET -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends"
+else
+	cmd="g++ -g -fPIC -DQUIET -O3 --std=c++17 -DNOIMPLOT -I./imgui -I./imgui/backends"
+fi
 
 function add {
   a=$(${cmd} -MM $1)

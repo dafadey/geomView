@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <string>
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -31,7 +31,7 @@ struct mainwin_config {
 
 struct imgui_interface {
   GLFWwindow* window{};
-#ifdef WIN32
+#ifdef _WIN32
   HWND nativeMSWindowHandler = 0;
   HWND parentMSWindowHandler = 0;
 #endif

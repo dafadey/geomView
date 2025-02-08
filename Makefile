@@ -14,7 +14,7 @@ SHADERS := sha_circle.vs sha_line.vs sha_vector.vs sha.vs sha.fs sha_line.fs sha
 OBJS := $(addprefix obj/, $(SOURCES_ALL:%.cpp=%.o))
 
 ifeq "$(OS)" "Windows_NT"
-	libs := -lopengl32 -lglew32 -lglfw3 -lgdi32 -lpng
+	libs := -v -lopengl32 -lglfw3 -lglew32 -lgdi32 -lole32 -static-libgcc -static-libstdc++ -Wl,-Bstatic -lpthread -lpng -lz
 	soext := dll
 else
 	libs := -lGL -lGLEW -lglfw -lrt -lm -ldl -lpng
@@ -23,14 +23,14 @@ endif
 
 all : $(TARGET_EXEC) $(TARGET_LIB)
 
-$(TARGET_EXEC): $(OBJS) obj/main.o shaderRAMfs.cpp.inl obj
+$(TARGET_EXEC): $(OBJS) obj/main.o obj
 	g++ -g -fPIC obj/main.o $(OBJS) -o $@ $(libs) 
 
-$(TARGET_LIB): $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl obj
+$(TARGET_LIB): $(OBJS) obj/mainlib.o obj
 	g++ -g -fPIC -shared obj/mainlib.o $(OBJS) -o $@.$(soext) $(libs) 
 	echo "create $@.a\naddmod obj/mainlib.o $OBJS\nsave\nexit\n" | ar -M
 
-$(TARGET_LIB): $(OBJS) obj/mainlib.o shaderRAMfs.cpp.inl obj arscript
+$(TARGET_LIB): $(OBJS) obj/mainlib.o obj arscript
 	g++ -g -fPIC -shared obj/mainlib.o $(OBJS) -o $@.$(soext) $(libs) 
 	if [ -d libglfw_objs ]; then ar rcs -o $@.a libglfw_objs/*.obj obj/mainlib.o $(OBJS); \
 	else ar rcs -o $@.a obj/mainlib.o $(OBJS); \
@@ -49,15 +49,21 @@ arscript :
 include obj/Makefile.deps
 
 shaderRAMfs.cpp.inl : $(SHADERS)
+	echo making $@
 	@g++ codegen.cpp -o codegen
-	./codegen $(SHADERS) > shaderRAMfs.cpp.inl
+	./codegen $< > $@
+
+buttons.png.inl : buttons.png
+	echo making $@
+	@g++ codegenbin.cpp -o codegenbin
+	./codegenbin $< > $@
 
 obj :
 	@mkdir -p obj
 	mkdir -p obj/imgui
 	mkdir -p obj/imgui/backends
 
-obj/Makefile.deps : shaderRAMfs.cpp.inl | obj imgui
+obj/Makefile.deps : shaderRAMfs.cpp.inl buttons.png.inl | obj imgui
 	@bash gendeps.sh $(SOURCES_ALL) main.cpp mainlib.cpp
 
 .PHONY: imgui

@@ -192,7 +192,7 @@ void geom_view::resetCamera() {
   glfwPostEmptyEvent();
 }  
 
-#ifdef WIN32
+#ifdef _WIN32
 HWND geom_view::getNativeWin32Handler() {
 	return iface->nativeMSWindowHandler;
 }

@@ -10,9 +10,10 @@
 #include "geom_view.h"
 #include "tools.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <ole2.h>
 #include <oleidl.h>
+
 class DragAndDrop : public IDropTarget {
   HRESULT Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override;
   HRESULT DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
@@ -145,7 +146,7 @@ int main(int argc, char* argv[]) {
     btns.addButton(glass_button(i, 10+(10+32)*i, 10, 32, 32, 32*i, 0, 32*(i+1), 32, proc_xyz, &ren));
   
 
-  #ifdef _MSC_VER
+  #ifdef _WIN32
   if (OleInitialize(NULL) != S_OK)
     std::cout << "failed to initialize COM\n";
   DragAndDrop dragAndDropTarget;
@@ -164,7 +165,7 @@ int main(int argc, char* argv[]) {
     //glFlush();
   }
   
-  #ifdef _MSC_VER
+  #ifdef _WIN32
   RevokeDragDrop(hWnd);
   OleUninitialize();
   #endif
