@@ -49,9 +49,9 @@ arscript :
 include obj/Makefile.deps
 
 shaderRAMfs.cpp.inl : $(SHADERS)
-	echo making $@
+	echo making $@ from $<
 	@g++ codegen.cpp -o codegen
-	./codegen $< > $@
+	./codegen $(SHADERS) > $@
 
 buttons.png.inl : buttons.png
 	echo making $@
