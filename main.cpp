@@ -15,19 +15,19 @@
 #include <oleidl.h>
 
 class DragAndDrop : public IDropTarget {
-  HRESULT Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override;
-  HRESULT DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
-  HRESULT DragLeave() override { return S_OK; }
-  HRESULT DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
-  HRESULT QueryInterface(REFIID riid, void** ppvObject) override { 
+  HRESULT STDMETHODCALLTYPE Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override;
+  HRESULT STDMETHODCALLTYPE DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
+  HRESULT STDMETHODCALLTYPE DragLeave() override { return S_OK; }
+  HRESULT STDMETHODCALLTYPE DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override { 
 	  //std::cout << "!!! QueryInterface: REFIID=" << (void*) &riid << '\n';
 	  return S_OK;
   }
-  ULONG AddRef() override { 
+  ULONG STDMETHODCALLTYPE AddRef() override {
 	  //std::cout << "!!! AddRef\n"; 
 	  return 1;
   }
-  ULONG Release() override { 
+  ULONG STDMETHODCALLTYPE Release() override {
 	  //std::cout << "!!! Release\n"; 
 	  return 0;
   }

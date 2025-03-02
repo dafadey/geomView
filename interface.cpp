@@ -197,6 +197,11 @@ void imgui_interface::close() {
   #endif
   ImGui::DestroyContext();
 
+#ifdef WIN32
+  if (nativeMSWindowHandler)
+	  SetParent(nativeMSWindowHandler, nullptr);
+#endif
+
   glfwDestroyWindow(window);
   glfwTerminate();
   window = nullptr;
