@@ -108,7 +108,7 @@ void geom_view::init() {
 }
 
 void geom_view::close() {
-  if(!iface)
+  if(!iface || !iface->window)
     return;
 	glfwSetWindowShouldClose(iface->window, 1);
   glfwPostEmptyEvent();

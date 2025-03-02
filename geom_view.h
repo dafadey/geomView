@@ -28,7 +28,7 @@ struct MSVC_EXPORT geom_view {
   
   renderer* ren_ptr{nullptr};
   object* obj_root{nullptr};
-  imgui_interface* iface;
+  imgui_interface* iface{nullptr};
   void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
   void* callbackData {nullptr};
 
