@@ -365,10 +365,19 @@ void renderer::render() {
       }
     }
   }
-  if(fabs(f-n) < 1e-3 * fabs(f)) {
-    f+=1e-3*f;
-    n-=1e-3*n;
+  
+  //robustness
+  {
+    float eps = 1e-3*(f - n);
+    float maxfn = std::max(std::abs(f) , std::abs(n));
+    maxfn = maxfn == 0 ? 1e-3 : maxfn;
+    if(fabs(f-n) < 1e-3 * maxfn)
+      eps = 1e-3*maxfn; 
+
+    f+=eps;
+    n-=eps;
   }
+  
   
   //std::cout << "f=" << f << ", n=" << n << ", cam_pos=" << cam_pos << ", cam_z=" << cam_z << '\n';
   
@@ -454,29 +463,30 @@ GLuint renderer::getShader(const std::string& vs_name, const std::string& fs_nam
 }
 
 vec3f renderer::center_camera() {
-  vec3f geo_d{ .0, .0, .0 };
-  fp_pos = vec3f{ .0, .0, .0 };
+  vec3f geo_max{ -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
+  vec3f geo_min{ std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+  
   auto items = get_items();
-
+  
   for (auto& item : items) {
     if (!item->visible)
       continue;
-    auto item_bounds = item->get_bounds();
-
+    const auto& item_bounds = item->get_bounds();
     for (int c = 0; c < 3; c++) {
-      double d = item_bounds[1][c] - item_bounds[0][c];
-      geo_d[c] = geo_d[c] > d ? geo_d[c] : d;
+      geo_min[c] = std::min(geo_min[c], item_bounds[0][c]);
+      geo_max[c] = std::max(geo_max[c], item_bounds[1][c]);
     }
-    fp_pos = fp_pos + (item_bounds[1] + item_bounds[0]) * .5;
   }
-  fp_pos = fp_pos / static_cast<double>(items.size());
+  vec3f geo_d = geo_max - geo_min;
+  geo_d = geo_d * geo_d == 0 ? vec3f{1e-3,1e-3,1e-3} : geo_d;
+  fp_pos = .5 * (geo_min + geo_max);
   return geo_d;
 }
 
 void renderer::reset_camera() {
   vec3f geo_d = center_camera();
 
-  cam_pos = fp_pos + vec3f{0.f, 0.f, sqrtf(geo_d*geo_d)};
+  cam_pos = fp_pos + vec3f{0.f, 0.f, 1.7f*sqrtf(geo_d*geo_d)};
 
   cam_up = vec3f{0.f,1.f,0.f};
 
