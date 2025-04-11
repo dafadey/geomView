@@ -12,6 +12,11 @@
 #include "object.h"
 #include "shaders.h"
 
+#ifdef _WIN32
+#undef min
+#undef max
+#endif
+
 static void getCamCoords(vec3f& cam_x, vec3f& cam_y, vec3f& cam_z, float& factor, const renderer* ren) {
   cam_y = ren->cam_up;
   normalize(cam_y);
@@ -478,7 +483,7 @@ vec3f renderer::center_camera() {
     }
   }
   vec3f geo_d = geo_max - geo_min;
-  geo_d = geo_d * geo_d == 0 ? vec3f{1e-3,1e-3,1e-3} : geo_d;
+  geo_d = geo_d * geo_d == 0 ? vec3f{ 1.e-3f,1.e-3f,1.e-3f } : geo_d;
   fp_pos = .5 * (geo_min + geo_max);
   return geo_d;
 }

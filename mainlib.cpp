@@ -153,6 +153,11 @@ void geom_view::reload(bool resetCam) {
 void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_, bool resetCam) {
   if(!ren_ptr)
     init();
+  while (true) {
+	  std::unique_lock<std::mutex> ul(reloadLock);
+	  if (files.size() == 0)
+		  break;
+  }
   reloadLock.lock();
   reloadFlag = true;
   files = files_;
@@ -164,6 +169,11 @@ void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_, 
 void geom_view::visibilities(const std::vector<std::pair<std::string, bool>>& files_) {
   if(!ren_ptr)
     init();
+  while (true) {
+	  std::unique_lock<std::mutex> ul(reloadLock);
+	  if (files.size() == 0)
+		  break;
+  }
   reloadLock.lock();
   changeVisibilityFlag = true;
   files = files_;
