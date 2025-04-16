@@ -74,8 +74,12 @@ struct renderer {
   
   std::array<GLfloat, 3> bg_color {.3f, .3f, .3f};
   
+  //callback and it's data on control point move
   void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
   void* callbackData {nullptr};
+  //callback and it's data for selection (RMB single click)
+  void (*selected)(void*, const std::vector<std::tuple<std::vector<std::string>, size_t, float>>&) {nullptr};
+  void* selectedData {nullptr};
 
   bool need_bg_color_picker{};
 

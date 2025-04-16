@@ -17,8 +17,8 @@ timer::~timer() {
   {
     #ifndef QUIET
     std::cout << message << ' ' << elapsed() << " s\n";
-    #else
-    std::cerr << message << ' ' << elapsed() << " s\n";
+    //#else
+    //std::cerr << message << ' ' << elapsed() << " s\n";
     #endif
   } 
 }

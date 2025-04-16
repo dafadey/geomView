@@ -9,6 +9,7 @@
 #include "fb2way.h"
 #include "glass_buttons.h"
 #include "buttons.png.inl"
+#include "tools.h"
 
 geom_view::geom_view() {
 	iface = new imgui_interface;
@@ -30,8 +31,8 @@ void geom_view::thread_func(geom_view* gv) {
   renderer& ren = *gv->ren_ptr;
   ren.init(iface.window, gv->obj_root);
 
-  ren.controlPointMoved = gv->controlPointMoved;
-  ren.callbackData = gv->callbackData;
+  //ren.controlPointMoved = gv->controlPointMoved;
+  //ren.callbackData = gv->callbackData;
   
   gv->reloadLock.lock();
   for(const auto& file : gv->files) {
@@ -83,7 +84,7 @@ void geom_view::thread_func(geom_view* gv) {
     }
     gv->reloadLock.unlock();
 
-    mainloop_pipeline(&btns, &fb2, &ren, iface.window, gv->obj_root, &gv->appearance);
+    mainloop_pipeline(&btns, &fb2, &ren, &iface, gv->obj_root, &gv->appearance);
 
     glfwSwapBuffers(iface.window);
 
@@ -153,10 +154,10 @@ void geom_view::reload(bool resetCam) {
 void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_, bool resetCam) {
   if(!ren_ptr)
     init();
-  while (true) {
-	  std::unique_lock<std::mutex> ul(reloadLock);
-	  if (files.size() == 0)
-		  break;
+  while(true) {
+    std::unique_lock<std::mutex> ul(reloadLock);
+    if(files.size()==0)
+      break;
   }
   reloadLock.lock();
   reloadFlag = true;
@@ -169,11 +170,13 @@ void geom_view::reload(const std::vector<std::pair<std::string, bool>>& files_, 
 void geom_view::visibilities(const std::vector<std::pair<std::string, bool>>& files_) {
   if(!ren_ptr)
     init();
-  while (true) {
-	  std::unique_lock<std::mutex> ul(reloadLock);
-	  if (files.size() == 0)
-		  break;
+  
+  while(true) {
+    std::unique_lock<std::mutex> ul(reloadLock);
+    if(files.size()==0)
+      break;
   }
+  
   reloadLock.lock();
   changeVisibilityFlag = true;
   files = files_;
@@ -186,9 +189,20 @@ void geom_view::setCallBack(void* data, void (*callback)(void*, std::vector<std:
     ren_ptr->controlPointMoved = callback;
     ren_ptr->callbackData = data;
   }
-  controlPointMoved = callback;
-  callbackData = data;
+  //controlPointMoved = callback;
+  //callbackData = data;
 }
+
+void geom_view::setSelectCallBack(void* data, void (*callback)(void*, const std::vector<std::tuple<std::vector<std::string>, size_t, float>>&)) {
+  if(ren_ptr) {
+    ren_ptr->selected = callback;
+    ren_ptr->selectedData = data;
+  }
+  //controlPointMoved = callback;
+  //selectedData = data;
+  
+}
+
 
 void geom_view::centerCamera() {
   if(ren_ptr)
@@ -211,6 +225,10 @@ void geom_view::setParentWin32Handler(HWND _parentMSWindowHandler) {
 	iface->parentMSWindowHandler = _parentMSWindowHandler;
 }
 #endif
+
+void geom_view::addCustomControl(const std::shared_ptr<geom_view_control>& cc) {
+  iface->custom_controls.push_back(cc);
+}
 
 void proc_xyz(int id, glass_button::eaction act, void* dat) {
   renderer* ren = (renderer*) dat;
@@ -262,4 +280,8 @@ void proc_xyz(int id, glass_button::eaction act, void* dat) {
     ren->cam_up = up;
   }
   glfwPostEmptyEvent();
+}
+
+std::vector<std::string> geom_view::tokenize(const std::string& in, const std::string& delim) {
+  return split(in, delim);
 }

@@ -35,7 +35,7 @@ endif()
 
 set(imgui_sources imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp) 
 
-set(common_sources buttons.png.inl shaderRAMfs.cpp.inl glass_buttons.cpp fb2way.cpp shaders.cpp draw.cpp geo.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp ${imgui_sources})
+set(custom_controls.cpp common_sources buttons.png.inl shaderRAMfs.cpp.inl glass_buttons.cpp fb2way.cpp shaders.cpp draw.cpp geo.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp ${imgui_sources})
 
 set(sources_exec main.cpp)
 

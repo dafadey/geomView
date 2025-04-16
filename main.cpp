@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
-    mainloop_pipeline(&btns, &fb2, &ren, iface.window, obj_root);
+    mainloop_pipeline(&btns, &fb2, &ren, &iface, obj_root);
     glfwSwapBuffers(iface.window);
     //glFlush();
   }

@@ -6,6 +6,10 @@
 #include <chrono>
 #include <string>
 
+#ifndef QUIET
+#define QUIET
+#endif
+
 struct timer {
   timer() = delete;
   timer(const char* msg);

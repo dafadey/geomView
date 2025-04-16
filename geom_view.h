@@ -5,6 +5,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "custom_controls.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -29,8 +31,8 @@ struct MSVC_EXPORT geom_view {
   renderer* ren_ptr{nullptr};
   object* obj_root{nullptr};
   imgui_interface* iface{nullptr};
-  void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
-  void* callbackData {nullptr};
+  //void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
+  //void* callbackData {nullptr};
 
 private:
   std::vector<std::pair<std::string, bool>> files; //this is used to pass data to another thread and protected with reloadLock
@@ -73,8 +75,13 @@ public:
   
   void setCallBack(void*, void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z));
 
+  void setSelectCallBack(void*, void (*selected)(void*, const std::vector<std::tuple<std::vector<std::string>, size_t, float>>&));
+
   void centerCamera();
   
   void resetCamera();
   
+  void addCustomControl(const std::shared_ptr<geom_view_control>& cc);
+  
+  static std::vector<std::string> tokenize(const std::string& in, const std::string& delim);
 };

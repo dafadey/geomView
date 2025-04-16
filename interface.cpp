@@ -206,3 +206,8 @@ void imgui_interface::close() {
   glfwTerminate();
   window = nullptr;
 }
+
+void imgui_interface::CustomControls() {
+  for(auto cc : this->custom_controls)
+    cc->display();
+}

@@ -28,4 +28,4 @@ struct object;
 struct GLFWwindow;
 struct glass_buttons;
 
-void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWwindow* window, object* obj_root, geom_view::UIappearance* = nullptr);
+void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui_interface* iface, object* obj_root, geom_view::UIappearance* = nullptr);

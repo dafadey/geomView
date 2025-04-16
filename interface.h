@@ -15,6 +15,8 @@
 #include <implot.h>
 #endif
 
+#include "custom_controls.h"
+
 #define MAINWIN_WIDTH_DEFAULT 1024
 #define MAINWIN_HEIGHT_DEFAULT 768
 #define MAINWIN_POSX_DEFAULT 31
@@ -36,6 +38,9 @@ struct imgui_interface {
   HWND parentMSWindowHandler = 0;
 #endif
   
+  std::vector<std::shared_ptr<geom_view_control>> custom_controls;
+
+  void CustomControls();
   bool init();
   void close();
 };

@@ -19,12 +19,21 @@ std::vector<std::string> parse(const std::string& s) {
   return res;
 }
 
-int main() {
+int main(int argc, const char* argv[]) {
 
   geom_view gv;
   gv.init();
 
   bool first_time_relf = true;
+
+  if(argc>1)
+  {
+    std::vector<std::pair<std::string, bool>> files;
+    for(int i=1; i<argc;i++)
+      files.push_back(std::make_pair(argv[i], true));
+    gv.reload(files, first_time_relf);
+    first_time_relf = false;
+  }
 
   std::string cmd="";
   while(cmd != "exit") {
@@ -46,14 +55,20 @@ int main() {
       std::cout << "file: " << f.first << ' ' << (f.second ? 'V' : 'X') << '\n';
     
     if(items[0] == "relf") {
-        gv.reload(files, first_time_relf);
-        first_time_relf = false;
+      gv.reload(files, first_time_relf);
+      first_time_relf = false;
     }
-    if(items[0] == "rel")
-        gv.reload();
-    
+    else if(items[0] == "rel")
+      gv.reload();
     else if(items[0] == "vis")
       gv.visibilities(files);
+    else if(items[0] == "vis_one_by_one") {
+      for(auto& f : files) {
+        std::vector<std::pair<std::string,bool>> file(1);
+        file[0] = f;
+        gv.visibilities(file);
+      }
+    }
     else if(items[0] == "res")
       gv.resetCamera();
     else if(items[0] == "cent")

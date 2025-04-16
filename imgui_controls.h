@@ -10,4 +10,5 @@ namespace ImGui {
   bool ObjectsControl(object* obj, renderer* ren);
 
   bool CameraControl(renderer* ren);
+
 }

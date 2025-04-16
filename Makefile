@@ -1,7 +1,7 @@
 TARGET_EXEC := geom_view
 TARGET_LIB := libgeom_view
 
-SOURCES := glass_buttons.cpp fb2way.cpp shaders.cpp geo.cpp draw.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp
+SOURCES := custom_controls.cpp glass_buttons.cpp fb2way.cpp shaders.cpp geo.cpp draw.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp
 
 SOURCES_IMGUI := imgui.cpp imgui_draw.cpp imgui_tables.cpp imgui_widgets.cpp 
 

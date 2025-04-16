@@ -138,7 +138,8 @@ fb2way::~fb2way() {
     glDeleteTextures(1, &fb_zs_texture);
 }
 
-void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWwindow* window, object* obj_root, geom_view::UIappearance* appearance) {
+void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui_interface* iface, object* obj_root, geom_view::UIappearance* appearance) {
+    GLFWwindow* window = iface->window;
     geom_view::UIappearance default_UIappearance;
     if(!appearance)
       appearance = &default_UIappearance;
@@ -167,6 +168,8 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, GLFWw
     ImGui_ImplGlfw_NewFrame();
     
     ImGui::NewFrame();
+
+    iface->CustomControls();
 
     if(appearance->imgui_object_control)
       ImGui::ObjectsControl(obj_root, &ren);
