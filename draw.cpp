@@ -191,9 +191,10 @@ void renderer::select(bool onlyControlPoints) const {
     
     std::cout << " : " << std::get<1>(it) << '\n';
   }
-  if(selected && !onlyControlPoints) {
+  if(selected && !onlyControlPoints && selectionResults.size()) {
     std::vector<std::tuple<std::vector<std::string>, size_t, float>> res;
-    for(auto& sr : selectionResults) {
+    for(int i = selectionResults.size()-1; i>=0; i--) {
+      const auto& sr = selectionResults[i];
       res.push_back(std::make_tuple(std::get<0>(sr)->fullName(), std::get<2>(sr), std::get<1>(sr)));
     }
     selected(selectedData, res);
@@ -490,7 +491,7 @@ vec3f renderer::center_camera() {
     }
   }
   vec3f geo_d = geo_max - geo_min;
-  geo_d = geo_d * geo_d == 0 ? vec3f{1e-3,1e-3,1e-3} : geo_d;
+  geo_d = geo_d * geo_d == 0 ? vec3f{1e-3f,1e-3f,1e-3f} : geo_d;
   fp_pos = .5 * (geo_min + geo_max);
   return geo_d;
 }
