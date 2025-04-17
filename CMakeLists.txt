@@ -57,7 +57,7 @@ endif()
 message("opts ${opts}")
 add_compile_options(${opts})
 
-set(PUB_HEADERS geom_view.h)
+set(PUB_HEADERS geom_view.h custom_controls.h)
 
 add_executable(${execTarget} ${sources_exec})
 add_library(${libTarget} STATIC ${PUB_HEADERS} ${sources_lib})
@@ -72,8 +72,8 @@ endif()
 set_target_properties (${dylibTarget} PROPERTIES COMPILE_DEFINITIONS 
 					   ${MSVC_LIB_DEFINITIONS} OUTPUT_NAME "${libNAME}" PREFIX "")
 
-set_target_properties(${libTarget} PROPERTIES PUBLIC_HEADER ${PUB_HEADERS})
-set_target_properties(${dylibTarget} PROPERTIES PUBLIC_HEADER ${PUB_HEADERS})
+set_target_properties(${libTarget} PROPERTIES PUBLIC_HEADER "${PUB_HEADERS}")
+set_target_properties(${dylibTarget} PROPERTIES PUBLIC_HEADER "${PUB_HEADERS}")
 
 add_library(commonArch STATIC ${common_sources})
 
