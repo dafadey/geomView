@@ -15,4 +15,6 @@ jobs:
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
+      - name: build win32
+        run: .github/workflows/win32_build.bat
       - run: echo "🍏 This job's status is ${{ job.status }}."
