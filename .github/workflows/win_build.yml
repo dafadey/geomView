@@ -28,14 +28,16 @@ jobs:
           ls ${{ github.workspace }}
       - name: build win32
         run: .github/workflows/win32_build.bat
-      - name: upload geom_view binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: geom_view
-          path: install_MSVC/bin/geom_view.exe
       - name: upload geom_view bundle
         uses: actions/upload-artifact@v4
         with:
           name: geom_view_bundle
           path: install_MSVC
+      - name: Release with Notes
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            install_MSVC
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "This job's status is ${{ job.status }}."
