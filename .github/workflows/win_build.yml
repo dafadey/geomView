@@ -31,6 +31,11 @@ jobs:
       - name: upload geom_view binary
         uses: actions/upload-artifact@v4
         with:
-          name: geom_view x86
+          name: geom_view
           path: install_MSVC/bin/geom_view.exe
+      - name: upload geom_view bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: geom_view_bundle
+          path: install_MSVC
       - run: echo "This job's status is ${{ job.status }}."
