@@ -38,6 +38,7 @@ jobs:
         with:
           files: |
             install_MSVC
+          tag_name: latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "This job's status is ${{ job.status }}."
