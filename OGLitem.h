@@ -10,22 +10,28 @@ struct renderer;
 
 struct OGLitem {
   OGLitem();
-  virtual void init(renderer* ren) = 0;
+  virtual void init(renderer* ren);
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) = 0;
   virtual void copyVBOtoDevice() = 0;
+  void copyHighlightTexToDevice();
   std::array<vec3f, 2> get_bounds() const;
   virtual ~OGLitem();
   virtual void clear();
+  virtual void safeInitHighlight();
   
   GLuint VBO{};
   GLuint vao{};
   GLuint shader{};
+  GLuint highlightTex{};
+  int highlightTex_loc{-1};
   virtual GLuint VBOstride() const = 0;
+  virtual GLuint itemStride() const = 0;
 
   vec3f geo_min{ FLT_MAX, FLT_MAX, FLT_MAX };
   vec3f geo_max{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
 
   std::vector<GLfloat> VBOdata;
+  std::vector<unsigned char> highlighted; // this is a texture used in geomshader
   bool visible = true;
   renderer* ren{};
   GLint verts_location{};
@@ -33,10 +39,13 @@ struct OGLitem {
   GLint proj_matrix_location{};
   GLint view_matrix_location{};
   GLint aspect_location{};
+  GLint mode_loc{};
 
   bool vboCopied{};
+  bool highlightedTextureCopied{};
   int memory() const;
   bool isControlPoints() const;
+  void highlight(int i, bool value);
 
 };
 
@@ -47,6 +56,7 @@ struct OGLtriangles : public OGLitem {
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) override;
   virtual void copyVBOtoDevice() override;
   virtual GLuint VBOstride() const override;
+  virtual GLuint itemStride() const override;
   void addTriangle(const std::array<vec3f, 3>& coords, const vec3f& color);
 
   GLint norms_location{};
@@ -64,6 +74,7 @@ struct OGLlines : public OGLitem {
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) override;
   virtual void copyVBOtoDevice() override;
   virtual GLuint VBOstride() const override;
+  virtual GLuint itemStride() const override;
   void addLine(const std::array<vec3f, 2>& coords, const vec3f& color);
 
   GLint lines_count{};
@@ -77,6 +88,7 @@ struct OGLpoints : public OGLitem {
   virtual void init(renderer* ren) override;
   virtual void draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) override;
   virtual void copyVBOtoDevice() override;
+  virtual GLuint itemStride() const override;
   virtual GLuint VBOstride() const override;
 
   void addPoint(const vec3f& coords, float radius, const vec3f& color);

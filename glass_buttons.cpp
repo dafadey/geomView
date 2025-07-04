@@ -132,8 +132,7 @@ void glass_buttons::init(const char* tex_data, int tex_size) {
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   shader = loadShaders(glass_btn_vs, glass_btn_fs);
 
-  #define DOLOC(X) X##_loc = glGetUniformLocation(shader, #X); \
-                    std::cout << #X << "_loc=" << X##_loc << '\n';
+  #define DOLOC(X) X##_loc = glGetUniformLocation(shader, #X); //std::cout << #X << "_loc=" << X##_loc << '\n';
   DOLOC(btnTex)
   DOLOC(bgTex)
   DOLOC(fbDim)
@@ -143,8 +142,7 @@ void glass_buttons::init(const char* tex_data, int tex_size) {
   DOLOC(pressed)
   #undef DOLOC
 
-  #define DOLOC(X) X##_loc = glGetAttribLocation(shader, #X); \
-                    std::cout << #X << "_loc=" << X##_loc << '\n';
+  #define DOLOC(X) X##_loc = glGetAttribLocation(shader, #X); //std::cout << #X << "_loc=" << X##_loc << '\n';
   DOLOC(vert)
   DOLOC(texcoords)
   DOLOC(btn_center)

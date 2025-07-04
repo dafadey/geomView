@@ -208,6 +208,10 @@ void imgui_interface::close() {
 }
 
 void imgui_interface::CustomControls() {
+  geom_view_control::postponed_callbacks_type cbcs; // all callbacks (typically just one per draw) are saved here to run them after draw command
+                                                    // it is crucial since callback can chage custom controls (remove or add to change panel contents)
   for(auto cc : this->custom_controls)
-    cc->display();
+    cc->display(cbcs);
+  for(auto& cbc : cbcs)
+    cbc.first(cbc.second);
 }

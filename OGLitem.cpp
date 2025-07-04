@@ -17,6 +17,18 @@ static std::array<float, 2> getAspect(renderer* ren) {
   return aspect;
 }
 
+void OGLitem::highlight(int i, bool value) {
+  safeInitHighlight();
+  if(i==-1) {
+    for(auto& h : highlighted)
+      h = value;
+  } else {
+    if(i < highlighted.size())
+      highlighted[i] = value;
+  }
+  highlightedTextureCopied = false;
+}
+
 bool OGLitem::isControlPoints() const {
   return dynamic_cast<const OGLControlPoints*>(this);
 }
@@ -61,10 +73,12 @@ void OGLitem::clear() {
   geo_min = vec3f{ FLT_MAX, FLT_MAX, FLT_MAX };
   geo_max = vec3f{ -FLT_MAX, -FLT_MAX, -FLT_MAX };
   VBOdata.clear();
+  highlighted.clear();
+  highlightedTextureCopied = false;
   vboCopied = false;
 }
 
-void OGLtriangles::init(renderer* ren_) {
+void OGLitem::init(renderer* ren_) {
   ren = ren_;
 
   if(!vao) {
@@ -88,9 +102,47 @@ void OGLtriangles::init(renderer* ren_) {
     std::cout << "WARNING: VBO is already initialized to " << VBO << '\n';
   #endif
   
+  if(!highlightTex)
+    glGenTextures(1, &highlightTex);
+  #ifndef QUIET
+  else
+    std::cout << "WARNING: highlightTex is already initialized to " << VBO << '\n';
+  #endif
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_1D, highlightTex);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glBindTexture(GL_TEXTURE_1D, 0);
+}
+
+void OGLitem::safeInitHighlight() {
+  int n = VBOdata.size() / itemStride();
+  while(highlighted.size() < n)
+    highlighted.push_back(0);
+}
+
+void OGLitem::copyHighlightTexToDevice() {
+  if(highlightedTextureCopied == true)
+    return;
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_1D, highlightTex);
+  safeInitHighlight();
+  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, highlighted.size(), 0, GL_RED, GL_UNSIGNED_BYTE, highlighted.data());
+  glBindTexture(GL_TEXTURE_1D, 0);
+  highlightedTextureCopied = true;
+}
+
+
+
+
+void OGLtriangles::init(renderer* ren_) {
+  OGLitem::init(ren_);
+  
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  shader = ren->getShader("sha.vs", "sha.fs");
+  shader = ren->getShader("sha.vs", "sha.fs", "sha.gs");
   
   verts_location = glGetAttribLocation(shader, "vertex_pos");
   norms_location = glGetAttribLocation(shader, "normal_pos");
@@ -101,6 +153,9 @@ void OGLtriangles::init(renderer* ren_) {
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
   shiny_location = glGetUniformLocation(shader, "shiny");
 
+  mode_loc = glGetUniformLocation(shader, "mode");
+  highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+  
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: norms_location=" << norms_location << '\n';
@@ -111,11 +166,30 @@ void OGLtriangles::init(renderer* ren_) {
   std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
   #endif
+
   glBindVertexArray(0);
 }
 
+#define DRAW_BEGIN()  glUseProgram(shader); \
+                      glBindVertexArray(vao); \
+                      glEnable(GL_DEPTH_TEST); \
+                      glUniformMatrix4fv(view_matrix_location, 1, false, view_matrix); \
+                      glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix); \
+                      glUniform1i(highlightTex_loc, 1); \
+                      glUniform1i(mode_loc, ren->draw_mode); \
+                      glActiveTexture(GL_TEXTURE1); \
+                      glBindTexture(GL_TEXTURE_1D, highlightTex);
+                      
+#define DRAW_END()    glBindVertexArray(0); \
+                      glBindTexture(GL_TEXTURE_1D, 0); \
+                      glUseProgram(0);
+
 GLuint OGLtriangles::VBOstride() const {
   return 9;
+}
+
+GLuint OGLtriangles::itemStride() const {
+  return 3*VBOstride();
 }
 
 void OGLtriangles::copyVBOtoDevice() {
@@ -150,7 +224,6 @@ void OGLtriangles::copyVBOtoDevice() {
   glEnableVertexAttribArray(verts_location);
   glEnableVertexAttribArray(norms_location);
   glEnableVertexAttribArray(colors_location);
-
   glBindVertexArray(0);
 
   vboCopied = true;
@@ -179,22 +252,16 @@ void OGLtriangles::addTriangle(const std::array<vec3f,3>& coords, const vec3f& c
 
 void OGLtriangles::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) {
   copyVBOtoDevice();
+  copyHighlightTexToDevice();
 
-  glUseProgram(shader);
-
-  glEnable(GL_DEPTH_TEST);
-  
-  glUniformMatrix4fv(view_matrix_location, 1, false, view_matrix);
-  glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix);
+  DRAW_BEGIN()
 
   glUniform3fv(light_location, 1, light_dir);
   glUniform1f(shiny_location, shiny);
-
-  glBindVertexArray(vao);
-
+  
   glDrawArrays(GL_TRIANGLES, 0, tris_count * 3);
-  glBindVertexArray(0);
-  glUseProgram(0);
+  
+  DRAW_END()
 }
 
 
@@ -203,32 +270,11 @@ void OGLtriangles::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* lig
 
 
 void OGLlines::init(renderer* ren_) {
-  ren = ren_;
-
-  if (!vao) {
-    glGenVertexArrays(1, &vao);
-    if (vao)
-      glBindVertexArray(vao);
-    #ifndef QUIET
-    else
-      std::cout << "failed to get vao err#"<< glGetError() << "\n";
-    #endif
-  }
-  #ifndef QUIET
-  else
-    std::cout << "WARNING: VAO is already initialized to " << vao << '\n';
-  #endif
-  
-  if (!VBO)
-    glGenBuffers(1, &VBO);
-  #ifndef QUIET
-  else
-    std::cout << "WARNING: VBO is already initialized to " << VBO << '\n';
-  #endif
+  OGLitem::init(ren_);
   
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-  shader = ren->getShader("sha_line.vs", "sha.fs");
+  shader = ren->getShader("sha_line.vs", "sha_line.fs", "sha_line.gs");
 
   verts_location = glGetAttribLocation(shader, "vertex_pos");
   colors_location = glGetAttribLocation(shader, "line_color");
@@ -237,6 +283,9 @@ void OGLlines::init(renderer* ren_) {
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
   aspect_location = glGetUniformLocation(shader, "aspect");
 
+  highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+  mode_loc = glGetUniformLocation(shader, "mode");
+
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: colors_location=" << colors_location << '\n';
@@ -244,6 +293,7 @@ void OGLlines::init(renderer* ren_) {
   std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
   #endif
+  
   glBindVertexArray(0);
 }
 
@@ -251,7 +301,7 @@ void OGLvectors::init(renderer* ren_) {
   OGLlines::init(ren_);
   if (vao) {
     glBindVertexArray(vao);
-    shader = ren->getShader("sha_vector.vs", "sha.fs", "sha_vector.gs");
+    shader = ren->getShader("sha_vector.vs", "sha_line.fs", "sha_vector.gs");
     verts_location = glGetAttribLocation(shader, "vertex_pos");
     colors_location = glGetAttribLocation(shader, "line_color");
 
@@ -265,6 +315,10 @@ void OGLvectors::init(renderer* ren_) {
 
 GLuint OGLlines::VBOstride() const {
   return 6;
+}
+
+GLuint OGLlines::itemStride() const {
+  return VBOstride()*2;
 }
 
 void OGLlines::copyVBOtoDevice() {
@@ -319,20 +373,13 @@ void OGLlines::addLine(const std::array<vec3f, 2>& coords, const vec3f& color)
 
 void OGLlines::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) {
   copyVBOtoDevice();
+  copyHighlightTexToDevice();
 
-  glUseProgram(shader);
-
-  glEnable(GL_DEPTH_TEST);
-
-  glUniformMatrix4fv(view_matrix_location, 1, false, view_matrix);
-  glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix);
+  DRAW_BEGIN()
   glUniform2fv(aspect_location, 1, getAspect(ren).data());
 
-  glBindVertexArray(vao);
-
   glDrawArrays(GL_LINES, 0, lines_count * 2);
-  glBindVertexArray(0);
-  glUseProgram(0);
+  DRAW_END()
 }
 
 
@@ -346,28 +393,7 @@ void OGLlines::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_d
 
 
 void OGLpoints::init(renderer* ren_) {
-  ren = ren_;
-
-  if (!vao) {
-    glGenVertexArrays(1, &vao);
-    if(vao)
-      glBindVertexArray(vao);
-    #ifndef QUIET
-    else
-      std::cout << "failed to get vao\n";
-    #endif
-  }
-  #ifndef QUIET
-  else
-    std::cout << "WARNING: VAO is already initialized to " << vao << '\n';
-  #endif
-  
-  if (!VBO)
-    glGenBuffers(1, &VBO);
-  #ifndef QUIET
-  else
-    std::cout << "WARNING: VBO is already initialized to " << VBO << '\n';
-  #endif
+  OGLitem::init(ren_);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
@@ -381,6 +407,9 @@ void OGLpoints::init(renderer* ren_) {
   view_matrix_location = glGetUniformLocation(shader, "view_matrix");
   aspect_location = glGetUniformLocation(shader, "aspect");
 
+  mode_loc = glGetUniformLocation(shader, "mode");
+  highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+  
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: radii_location=" << radii_location << '\n';
@@ -390,6 +419,9 @@ void OGLpoints::init(renderer* ren_) {
   std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
   std::cout << "\tuniform: aspect_location=" << aspect_location << '\n';
   #endif
+  
+  highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+
   glBindVertexArray(0);
 }
 
@@ -417,6 +449,10 @@ void OGLControlPoints::init(renderer* ren_) {
 
 GLuint OGLpoints::VBOstride() const {
   return 7;
+}
+
+GLuint OGLpoints::itemStride() const {
+  return VBOstride();
 }
 
 void OGLpoints::copyVBOtoDevice() {
@@ -472,19 +508,14 @@ void OGLpoints::addPoint(const vec3f& pt, float radius, const vec3f& color)
 
 void OGLpoints::draw(GLfloat* view_matrix, GLfloat* proj_matrix, GLfloat* light_dir) {
   copyVBOtoDevice();
+  copyHighlightTexToDevice();
 
-  glUseProgram(shader);
-
-  glEnable(GL_DEPTH_TEST);
-
-  glUniformMatrix4fv(view_matrix_location, 1, false, view_matrix);
-  glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix);
+  DRAW_BEGIN()
   glUniform2fv(aspect_location, 1, getAspect(ren).data());
 
-  glBindVertexArray(vao);
-
   glDrawArrays(GL_POINTS, 0, points_count);
-  glBindVertexArray(0);
-  glUseProgram(0);
+  DRAW_END()
 }
 
+#undef DRAW_BEGIN
+#undef DRAW_END

@@ -137,7 +137,7 @@ image* read_png_file(const char* buff, int size)
   if(color_type == PNG_COLOR_TYPE_PALETTE)
     png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
   
-  std::cout << "read file" << std::endl;
+  //std::cout << "read file" << std::endl;
   if (setjmp(png_jmpbuf(png_ptr)))
           std::cerr << "[read_png_file] Error during read_image" << std::endl;
 

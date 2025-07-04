@@ -41,7 +41,7 @@ set(sources_exec main.cpp)
 
 set(sources_lib mainlib.cpp)
 
-set(shaders sha_circle.vs sha_line.vs sha_vector.vs sha.vs sha.fs sha_line.fs sha_circle.gs sha_cp.gs sha_vector.gs)
+set(shaders sha_circle.vs sha_line.vs sha_vector.vs sha.vs sha.fs sha_line.fs sha.gs sha_circle.gs sha_line.gs sha_cp.gs sha_vector.gs)
 
 set(execTarget "geom_view")
 set(libNAME "geom_view")

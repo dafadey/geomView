@@ -114,7 +114,7 @@ void proc_xyz(int id, glass_button::eaction act, void* dat) {
 }
 
 int main(int argc, char* argv[]) {
-  std::cout << "Hallo!\n";
+  std::cout << "Hallo this is geomView!\n";
 
   imgui_interface iface;
   iface.init();

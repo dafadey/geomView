@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <thread>
 #include <condition_variable>
 
 #include "custom_controls.h"
@@ -50,6 +51,7 @@ public:
   UIappearance appearance{};
   
   static void thread_func(geom_view*);
+  std::thread::id th_id;
 
 #ifdef _WIN32
   HWND getNativeWin32Handler();
@@ -80,6 +82,8 @@ public:
   void centerCamera();
   
   void resetCamera();
+  
+  void highlight(const std::string&, bool = true); // string is an object in format root:name:name:name:id   if id=-1 all items in group
   
   void addCustomControl(const std::shared_ptr<geom_view_control>& cc);
   

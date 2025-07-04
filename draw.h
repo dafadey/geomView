@@ -26,7 +26,7 @@ struct object;
 
 struct renderer {
   enum e_mouse_state{HOVER, ROTATE, PAN, ZOOM, SELECT_DRAG};
-    
+  enum e_draw_mode{NORMAL=0, HIGHLIGHT=1};
   object* obj{};
 
   std::map<std::array<std::string,3>, GLuint> shaders;
@@ -43,6 +43,8 @@ struct renderer {
   float mask_r_y{.1f};
   bool mask_erases{true};
 
+  e_draw_mode draw_mode{e_draw_mode::NORMAL};
+  
   GLFWwindow* win;
   
   e_mouse_state mouse_state{HOVER};

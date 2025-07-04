@@ -151,7 +151,7 @@ static void select_object(const object* obj, const renderer* ren, std::vector<st
     }
     id++;
   }
-  res.push_back(std::make_tuple(obj,minDist2,minId));
+  res.push_back(std::make_tuple(obj,minDist2,minId * obj->item->VBOstride() / obj->item->itemStride()));
   //std::cout << "obj: " << obj->name << " minDist2=" << minDist2 << '\n';
 }
 
@@ -327,7 +327,11 @@ std::vector<OGLitem*> renderer::get_items() {
 void renderer::render() {
   if(!win)
     return;
-  glEnable(GL_DEPTH_TEST);
+  if(draw_mode==e_draw_mode::NORMAL)
+    glEnable(GL_DEPTH_TEST);
+  else if(draw_mode==e_draw_mode::HIGHLIGHT)
+    glDisable(GL_DEPTH_TEST);
+
   int win_geo[2];
   glfwGetWindowSize(win, win_geo, &win_geo[1]);
 

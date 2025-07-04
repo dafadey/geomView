@@ -9,7 +9,7 @@ SOURCES_IMGUI_BACKENDS := imgui_impl_glfw.cpp imgui_impl_opengl3.cpp
 
 SOURCES_ALL := $(SOURCES) $(addprefix imgui/, $(SOURCES_IMGUI)) $(addprefix imgui/backends/, $(SOURCES_IMGUI_BACKENDS))
 
-SHADERS := sha_circle.vs sha_line.vs sha_vector.vs sha.vs sha.fs sha_line.fs sha_circle.gs sha_cp.gs sha_vector.gs
+SHADERS := sha_circle.vs sha_line.vs sha_vector.vs sha.vs sha.fs sha_line.fs sha.gs sha_circle.gs sha_line.gs sha_cp.gs sha_vector.gs
 
 OBJS := $(addprefix obj/, $(SOURCES_ALL:%.cpp=%.o))
 

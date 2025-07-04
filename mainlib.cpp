@@ -22,6 +22,7 @@ geom_view::~geom_view() {
 void proc_xyz(int id, glass_button::eaction act, void* dat);
 
 void geom_view::thread_func(geom_view* gv) {
+  gv->th_id = std::this_thread::get_id();
   imgui_interface& iface = *(gv->iface);
   iface.init();
   
@@ -65,7 +66,6 @@ void geom_view::thread_func(geom_view* gv) {
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
     //glfwPollEvents();
-    
     gv->reloadLock.lock();
     if(gv->reloadFlag) {
       std::cout << "files size is " << gv->files.size() << '\n';
@@ -135,6 +135,18 @@ void geom_view::init(const std::string& filename) {
 void geom_view::reload(bool resetCam) {
   if(!ren_ptr)
     init();
+  
+  if(std::this_thread::get_id() == th_id) { // in case of callbacks we need to load right away
+    files.clear();
+    if(obj_root) {
+      for(auto& item : obj_root->children())
+        files.push_back(std::make_pair(item->name, true));
+    }
+    reload_files(obj_root, ren_ptr, files);
+    files.clear();
+    return;
+  }
+    
   reloadLock.lock();
   reloadFlag = true;
   files.clear();
@@ -279,6 +291,28 @@ void proc_xyz(int id, glass_button::eaction act, void* dat) {
     ren->cam_pos = ren->fp_pos - std::sqrt((ren->cam_pos - ren->fp_pos) * (ren->cam_pos - ren->fp_pos)) * dir;
     ren->cam_up = up;
   }
+  glfwPostEmptyEvent();
+}
+
+static void iterate_highlight(object* obj, const std::vector<std::string>& sobject, bool value=true, int level=0) {
+  for(object* c : obj->children())
+  {
+    if(level + 1 >= sobject.size() || c->name == sobject[level + 1])
+      iterate_highlight(c, sobject, value, level+1);
+  }
+  if(obj->item) {
+    if(level + 1 >= sobject.size() || sobject[level + 1] == "-1")
+      obj->item->highlight(-1, value);
+    else {
+      int pid = atoi(sobject[level + 1].c_str());
+      obj->item->highlight(pid, value);
+    }
+  }
+}
+
+void geom_view::highlight(const std::string& item, bool value) {
+  auto items = tokenize(item, ":");
+  iterate_highlight(obj_root, items, value, 0);
   glfwPostEmptyEvent();
 }
 

@@ -21,8 +21,12 @@ const char* sha_fb_fs = (const char*) CODETOCHARv150
             out vec4 outputF;
             in vec2 fbCoord;
             uniform sampler2D fbTexture;
+            uniform sampler2D fbhlTexture;
+            uniform int fb_wx;
+            uniform int fb_wy;
             void main() {
               /*
+              //funny shader
               vec2 rv = fbCoord-vec2(.5,.5);
               float r = rv.x*rv.x + rv.y*rv.y;
               r *= 0.03;
@@ -39,7 +43,33 @@ const char* sha_fb_fs = (const char*) CODETOCHARv150
               }
               outputF = outputF * (1./n);
               */
-              outputF = texture(fbTexture, fbCoord);
+
+              ivec2 coord = ivec2(fbCoord.x * fb_wx, fbCoord.y * fb_wy);
+
+              vec4 this_color = texelFetch(fbhlTexture, coord, 0);
+
+              int r0 = 3;
+              int nearest0 = 2*r0*r0;
+              int nearest = nearest0;
+              for(int j = -r0; j <= r0; j++) {
+                for(int i = -r0; i <= r0; i++) {
+                  ivec2 ipos = coord + ivec2(i, j);
+                  if(ipos.x<0 || ipos.y<0 || ipos.x >= fb_wx || ipos.y >= fb_wy)
+                    continue;
+                  vec4 c = texelFetch(fbhlTexture, ipos, 0);
+                  int r2 = i*i+j*j;
+                  if(c != this_color && r2 < nearest)
+                    nearest = r2;
+                }
+              }
+              
+              float f = sqrt(float(nearest) / float(nearest0));
+              
+              if(nearest == nearest0)
+                outputF = texelFetch(fbTexture, coord, 0);
+              else
+                outputF = (1.f - f) * vec4(1,1,0,1) + f * texelFetch(fbTexture, coord, 0);
+
             }
 );
 
@@ -54,6 +84,18 @@ void fb2way::init(int wx, int wy) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
   }
+
+  if(!fbhl_texture) {
+    glGenTextures(1, &fbhl_texture);
+    glBindTexture(GL_TEXTURE_2D, fbhl_texture);
+    fb_wx = wx;
+    fb_wy = wy;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+  }
+
   
   if(!fb_zs_texture) {
     glGenTextures(1, &fb_zs_texture);
@@ -73,13 +115,26 @@ void fb2way::init(int wx, int wy) {
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
       std::cout << "failed to bind frame buffer\n";
   }
+
+  if(!fbhl) {
+    glGenFramebuffers(1, &fbhl);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbhl);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbhl_texture, 0);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fb_zs_texture, 0); 
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fb_zs_texture, 0); 
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      std::cout << "failed to bind frame buffer\n";
+  }
   
   if(!fb_shader)
     fb_shader = loadShaders(sha_fb_vs, sha_fb_fs);
 
   fbtexloc = glGetUniformLocation(fb_shader, "fbTexture");
+  fbhltexloc = glGetUniformLocation(fb_shader, "fbhlTexture");
   //fbztexloc = glGetUniformLocation(fb_shader, "fbzTexture");
   //std::cout << "fbtexloc=" << fbtexloc << ", fbztexloc=" << fbztexloc << '\n';
+  fb_wx_loc = glGetUniformLocation(fb_shader, "fb_wx");
+  fb_wy_loc = glGetUniformLocation(fb_shader, "fb_wy");
 
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -93,6 +148,9 @@ void fb2way::resize(int wx, int wy) {
   fb_wx = wx;
   fb_wy = wy;
   glBindTexture(GL_TEXTURE_2D, fb_texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D, fbhl_texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindTexture(GL_TEXTURE_2D, fb_zs_texture);
@@ -110,6 +168,10 @@ void fb2way::set_custom() {
   glBindFramebuffer(GL_FRAMEBUFFER, fb);
 }
 
+void fb2way::set_custom_hl() {
+  glBindFramebuffer(GL_FRAMEBUFFER, fbhl);
+}
+
 void fb2way::render() {
   if(!vao)
     glGenVertexArrays(1, &vao);
@@ -118,8 +180,13 @@ void fb2way::render() {
   glDisable(GL_DEPTH_TEST);
   glUniform1i(fbtexloc, 0);
   //glUniform1i(fbztexloc, 1);
+  glUniform1i(fbhltexloc, 2);
+  glUniform1i(fb_wx_loc, fb_wx);
+  glUniform1i(fb_wy_loc, fb_wy);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, fb_texture);
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, fbhl_texture);
   //glActiveTexture(GL_TEXTURE1);
   //glBindTexture(GL_TEXTURE_2D, fb_zs_texture);
   //std::cout << "fb2way rendering texture " << fb_texture << '\n';
@@ -134,6 +201,8 @@ fb2way::~fb2way() {
     glDeleteFramebuffers(1, &fb);
   if(fb_texture)
     glDeleteTextures(1, &fb_texture);
+  if(fbhl_texture)
+    glDeleteTextures(1, &fbhl_texture);
   if(fb_zs_texture)
     glDeleteTextures(1, &fb_zs_texture);
 }
@@ -145,6 +214,18 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui
       appearance = &default_UIappearance;
     
     renderer& ren = *renptr;
+    
+    if(fb2) {
+      fb2->set_custom_hl();
+      int wx, wy;
+      glfwGetWindowSize(window, &wx, &wy);
+      fb2->resize(wx, wy);
+      glClearColor(1, 1, 1, 1.);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
+      ren.draw_mode = renderer::e_draw_mode::HIGHLIGHT;
+      ren.render();
+    }
 
     if(fb2) {
       fb2->set_custom();
@@ -163,6 +244,17 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui
       ren.set_callbacks(window);
 
     static int counter{0};
+
+    glClearColor(ren.bg_color[0], ren.bg_color[1], ren.bg_color[2], 1.);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    ren.draw_mode = renderer::e_draw_mode::NORMAL;
+    ren.render();
+
+    if(fb2) {
+      fb2->set_default();
+      fb2->render();
+    }
+
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -192,16 +284,8 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui
     
     ImGui::Render();
 
-    glClearColor(ren.bg_color[0], ren.bg_color[1], ren.bg_color[2], 1.);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    ren.render();
-
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    if(fb2) {
-      fb2->set_default();
-      fb2->render();
-    }
     
     if(appearance->native_cam_control)
     {
