@@ -83,7 +83,9 @@ public:
   
   void resetCamera();
   
-  void highlight(const std::string&, bool = true); // string is an object in format root:name:name:name:id   if id=-1 all items in group
+  void highlight(const std::vector<std::string>&, bool = true); // vector is an object in format {root:name:name:name:id} if id=-1 all items in group
+
+  void highlight(const std::string&, bool = true); // string is an object in format root:name:name:name:id if id=-1 all items in group
   
   void addCustomControl(const std::shared_ptr<geom_view_control>& cc);
   

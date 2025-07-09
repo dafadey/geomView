@@ -74,6 +74,7 @@ void selection_callback(void* raw, const std::vector<std::tuple<std::vector<std:
     for(int i=std::get<0>(input[0]).size()-1; i >=0 ; i--)
       name += std::get<0>(input[0])[i] + ':';
     name += std::to_string(std::get<1>(input[0]));
+    std::cout << "highlighting \"" << name << "\"\n";
     iface->gv.highlight(name, iface->select);
   }
 }

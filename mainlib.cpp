@@ -310,10 +310,14 @@ static void iterate_highlight(object* obj, const std::vector<std::string>& sobje
   }
 }
 
+void geom_view::highlight(const std::vector<std::string>& item, bool value) {
+  iterate_highlight(obj_root, item, value, 0);
+  glfwPostEmptyEvent();
+}
+
 void geom_view::highlight(const std::string& item, bool value) {
   auto items = tokenize(item, ":");
-  iterate_highlight(obj_root, items, value, 0);
-  glfwPostEmptyEvent();
+  highlight(items, value);
 }
 
 std::vector<std::string> geom_view::tokenize(const std::string& in, const std::string& delim) {
