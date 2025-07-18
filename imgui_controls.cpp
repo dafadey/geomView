@@ -141,12 +141,13 @@ namespace ImGui {
     }
   }
 
-  bool DoObject(object* obj) {
+  bool DoObject(object* obj, bool& redraw) {
     if (obj->children().size()) {
       if(obj->parent && obj->parent->children().size()) {
         PushID(reinterpret_cast<size_t>(obj));
         if(*obj->parent->children().begin() != obj) {
           if(Button("^")) {
+            redraw = true;
             std::list<object*> new_list;
             new_list.push_back(obj);
             for(object*& c : obj->parent->children())
@@ -155,7 +156,7 @@ namespace ImGui {
                 new_list.push_back(c);
             }
             obj->parent->children() = new_list;
-          } 
+          }
         } else
           Button("x");
         SameLine();
@@ -163,13 +164,18 @@ namespace ImGui {
       }
       bool expnd = ImGui::TreeNode(obj->name.c_str());
       if (expnd) {
-        if(Button(obj->visible ? "untick" : "tick"))
+        if(Button(obj->visible ? "untick" : "tick")) {
+          redraw = true;
           obj->setItemsVisible(!obj->visible);
+        }
         SameLine();
-        if(Button(obj->visible ? "hide" : "show"))
+        if(Button(obj->visible ? "hide" : "show")) {
+          redraw = true;
           obj->visible = !obj->visible;
+        }
         SameLine();
         if (Button("remove")) {
+          redraw = true;
           ImGui::TreePop();
           return false;
         }
@@ -177,7 +183,7 @@ namespace ImGui {
         std::list<object*>::const_iterator it = obj->children().begin();
         std::vector<std::list<object*>::const_iterator> to_erase;
         while (it != obj->children().end()) {
-          if(!DoObject(*it))
+          if(!DoObject(*it, redraw))
             to_erase.push_back(it);
           it++;
         }
@@ -190,7 +196,8 @@ namespace ImGui {
     } else {
       if(obj->item) {
         PushID(reinterpret_cast<size_t>(obj));
-        Checkbox(obj->name.c_str(), &(obj->item->visible));
+        if(Checkbox(obj->name.c_str(), &(obj->item->visible)))
+          redraw = true;
         PopID();
       }
     }
@@ -429,7 +436,10 @@ namespace ImGui {
     if(doFilterTick)
       FilterTickObject(obj, split(std::string(tickfilter), std::string(";")), doFilterTick==1 ? true : false);
     
-    DoObject(obj);  
+    bool redraw;
+    DoObject(obj, redraw);
+    if(redraw)
+      glfwPostEmptyEvent();
     ImGui::End();
     return true;
   }
