@@ -222,3 +222,19 @@ void geom_view_control_radio::display(postponed_callbacks_type& ppc) {
   if(checked && callback)
     ppc.emplace_back(postponed_callback_type{callback, callback_data});
 }
+
+//-------------------------------CHECKBOX
+
+std::shared_ptr<geom_view_control_checkbox> geom_view_control_checkbox::makeCustomCheckBox(const std::string& _name) {
+  geom_view_control_checkbox* res = new geom_view_control_checkbox();
+  res->name = _name;
+  return std::shared_ptr<geom_view_control_checkbox>(res);
+}
+
+void geom_view_control_checkbox::display(postponed_callbacks_type& ppc) {
+  ImGui::PushID(&name);
+  if(ImGui::Checkbox(name.c_str(), &checked) && callback)
+    ppc.emplace_back(postponed_callback_type{callback, callback_data});
+  ImGui::PopID();
+}
+

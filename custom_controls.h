@@ -103,3 +103,13 @@ struct MSVC_EXPORT geom_view_control_radio : public geom_view_control {
 protected:
   geom_view_control_radio() {};
 };
+
+struct MSVC_EXPORT geom_view_control_checkbox : public geom_view_control {
+  static std::shared_ptr<geom_view_control_checkbox> makeCustomCheckBox(const std::string& name);
+  virtual void display(postponed_callbacks_type&);
+  bool checked{};
+  void (*callback)(void*) {nullptr};
+  
+protected:
+  geom_view_control_checkbox() {};
+};

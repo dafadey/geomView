@@ -212,6 +212,11 @@ void imgui_interface::CustomControls() {
                                                     // it is crucial since callback can chage custom controls (remove or add to change panel contents)
   for(auto cc : this->custom_controls)
     cc->display(cbcs);
-  for(auto& cbc : cbcs)
+  bool any_cbc_called = false;
+  for(auto& cbc : cbcs) {
     cbc.first(cbc.second);
+    any_cbc_called = true;
+  }
+  if(any_cbc_called)
+    glfwPostEmptyEvent();
 }
