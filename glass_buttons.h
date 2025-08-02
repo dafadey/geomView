@@ -57,7 +57,7 @@ struct glass_buttons : public std::vector<glass_button> {
   void process();
   void init(const char* tex_data, int tex_size);
   bool wantsToGrabCursor();
-  glass_button* active_button;
+  glass_button* active_button{};
   void addButton(const glass_button&);
   void draw();
   void finalize(); //call at the end of frame

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <array>
 #include <vector>
 #include <mutex>
 #include <thread>
@@ -15,6 +16,7 @@
 struct object;
 struct renderer;
 struct imgui_interface;
+struct fb2way;
 
 #ifdef MSVC_DYNAMIC_BUILD
   #define MSVC_EXPORT __declspec (dllexport)
@@ -23,6 +25,19 @@ struct imgui_interface;
 #endif
 
 struct MSVC_EXPORT geom_view {
+  
+  const static int LEFT_BUTTON;
+  const static int MIDDLE_BUTTON;
+  const static int RIGHT_BUTTON;
+  
+  struct ViewControls {
+    int rotateButton;
+    int panButton;
+    int selectButton;
+  };
+  
+  ViewControls viewControls;
+  
   struct UIappearance {
     bool imgui_cam_control{true};
     bool imgui_object_control{true};
@@ -32,8 +47,11 @@ struct MSVC_EXPORT geom_view {
   renderer* ren_ptr{nullptr};
   object* obj_root{nullptr};
   imgui_interface* iface{nullptr};
+  fb2way* fb2{nullptr};
   //void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z) {nullptr};
   //void* callbackData {nullptr};
+  bool runInThread{true}; //by default library runs in thread because ideologically you add library to visualize something on fly, if you want to create singlethreaded app based on this library set to false
+  std::array<int, 2> screenGeo{0, 0};
 
 private:
   std::vector<std::pair<std::string, bool>> files; //this is used to pass data to another thread and protected with reloadLock
@@ -43,8 +61,20 @@ private:
   std::mutex reloadLock;
   bool reloadFlag {false};
   bool changeVisibilityFlag {false};
+  bool offscreen{}; // does not create a window, renders to buffer
   
 public:
+  //switches to offscreen mode
+  void setOffsсreen(int nx, int ny);
+  bool isOffscreen();
+  
+  // retreives image buffer without controls and selection highlight
+  // output format:
+  //  pixel format is 3 chars (RGB)
+  //  pixels are in row order
+  void getBuffer(int& nx, int& ny, std::vector<unsigned char>& buff);
+  void makeShot();
+  
   geom_view();
   ~geom_view();
 
@@ -82,7 +112,9 @@ public:
   void centerCamera();
   
   void resetCamera();
-  
+
+  void showOrigin(bool);
+
   void highlight(const std::vector<std::string>&, bool = true); // vector is an object in format {root:name:name:name:id} if id=-1 all items in group
 
   void highlight(const std::string&, bool = true); // string is an object in format root:name:name:name:id if id=-1 all items in group

@@ -37,7 +37,7 @@ set(imgui_sources imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp i
 
 set(common_sources custom_controls.cpp buttons.png.inl shaderRAMfs.cpp.inl glass_buttons.cpp fb2way.cpp shaders.cpp draw.cpp geo.cpp imgui_controls.cpp interface.cpp object.cpp OGLitem.cpp saveSTL.cpp timer.cpp tools.cpp vectors.cpp ${imgui_sources})
 
-set(sources_exec main.cpp)
+set(sources_exec main.cpp mainlib.cpp)
 
 set(sources_lib mainlib.cpp)
 

@@ -79,7 +79,8 @@ void fb2way::init(int wx, int wy) {
     glBindTexture(GL_TEXTURE_2D, fb_texture);
     fb_wx = wx;
     fb_wy = wy;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    if(wx && wy)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
@@ -90,7 +91,8 @@ void fb2way::init(int wx, int wy) {
     glBindTexture(GL_TEXTURE_2D, fbhl_texture);
     fb_wx = wx;
     fb_wy = wy;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    if(wx && wy)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fb_wx, fb_wy, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
@@ -103,7 +105,8 @@ void fb2way::init(int wx, int wy) {
     fb_wx = wx;
     fb_wy = wy;
     //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, wx, wy, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, wx, wy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    if(wx && wy)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, wx, wy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   }
   
   if(!fb) {
@@ -160,6 +163,25 @@ void fb2way::resize(int wx, int wy) {
 
 }
 
+void fb2way::getBuffer(std::vector<unsigned char>& buff) {
+  int stride = 3 * fb_wx;
+  int add = stride % 4;
+  stride += (4 - add)%4;
+  if(buffer.size() != stride * fb_wy)
+    buffer.resize(stride * fb_wy);
+  glBindTexture(GL_TEXTURE_2D, fb_texture);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+  if(buff.size() != 3 * fb_wx * fb_wy)
+    buff.resize(3 * fb_wx * fb_wy);
+  
+  for(int j=0; j < fb_wy; j++) {
+    for(int i=0; i < fb_wx; i++) {
+      for(int c=0; c < 3; c++)
+        buff[(i + j*fb_wx)*3 + c] = buffer[i*3 + j*stride + c];
+    }
+  }
+}
+
 void fb2way::set_default() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -207,19 +229,27 @@ fb2way::~fb2way() {
     glDeleteTextures(1, &fb_zs_texture);
 }
 
-void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui_interface* iface, object* obj_root, geom_view::UIappearance* appearance) {
+void mainloop_pipeline(geom_view* gv, fb2way* fb2, glass_buttons* btns, geom_view::UIappearance* appearance) {
+    renderer* renptr = gv->ren_ptr;
+    imgui_interface* iface = gv->iface;
+    object* obj_root = gv->obj_root;
+  
     GLFWwindow* window = iface->window;
     geom_view::UIappearance default_UIappearance;
     if(!appearance)
       appearance = &default_UIappearance;
     
     renderer& ren = *renptr;
+    //std::cout << "gv->screenGeo:" << gv->screenGeo[0] << 'x' << gv->screenGeo[1] << '\n';
+    if(!gv->isOffscreen()) {
+      int wx, wy;
+      glfwGetWindowSize(window, &wx, &wy);
+      gv->screenGeo = std::array<int,2> {wx, wy};
+    }
     
     if(fb2) {
       fb2->set_custom_hl();
-      int wx, wy;
-      glfwGetWindowSize(window, &wx, &wy);
-      fb2->resize(wx, wy);
+      fb2->resize(gv->screenGeo[0], gv->screenGeo[1]);
       glClearColor(1, 1, 1, 1.);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       glEnable(GL_DEPTH_TEST);
@@ -229,22 +259,19 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui
 
     if(fb2) {
       fb2->set_custom();
-      int wx, wy;
-      glfwGetWindowSize(window, &wx, &wy);
-      fb2->resize(wx, wy);
+      fb2->resize(gv->screenGeo[0], gv->screenGeo[1]);
     }
 
-    ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
-    if(btns)
-      ren.nocallbacks |= btns->wantsToGrabCursor();
-      
-    if(ren.nocallbacks)
-      glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-    else
-      ren.set_callbacks(window);
-
-    static int counter{0};
-
+    if(!gv->isOffscreen()) {
+      ren.nocallbacks = ImGui::GetIO().WantCaptureMouse;
+      if(btns)
+        ren.nocallbacks |= btns->wantsToGrabCursor();
+        
+      if(ren.nocallbacks)
+        glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+      else
+        ren.set_callbacks(window);
+    }
     glClearColor(ren.bg_color[0], ren.bg_color[1], ren.bg_color[2], 1.);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     ren.draw_mode = renderer::e_draw_mode::NORMAL;
@@ -254,7 +281,9 @@ void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui
       fb2->set_default();
       fb2->render();
     }
-
+    
+    if(gv->isOffscreen())
+      return;
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();

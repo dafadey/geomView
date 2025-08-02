@@ -1,6 +1,8 @@
 #include <iostream>
 #include <limits>
 #include <thread>
+#include <fstream>
+
 #include "draw.h"
 #include "interface.h"
 #include "object.h"
@@ -11,29 +13,134 @@
 #include "buttons.png.inl"
 #include "tools.h"
 
+#ifdef _WIN32
+#include <ole2.h>
+#include <oleidl.h>
+
+class DragAndDrop : public IDropTarget {
+  HRESULT STDMETHODCALLTYPE Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override;
+  HRESULT STDMETHODCALLTYPE DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
+  HRESULT STDMETHODCALLTYPE DragLeave() override { return S_OK; }
+  HRESULT STDMETHODCALLTYPE DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) override { return S_OK; }
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override { 
+	  //std::cout << "!!! QueryInterface: REFIID=" << (void*) &riid << '\n';
+	  return S_OK;
+  }
+  ULONG STDMETHODCALLTYPE AddRef() override {
+	  //std::cout << "!!! AddRef\n"; 
+	  return 1;
+  }
+  ULONG STDMETHODCALLTYPE Release() override {
+	  //std::cout << "!!! Release\n"; 
+	  return 0;
+  }
+public:
+  object* obj_root = nullptr;
+  renderer* ren = nullptr;
+};
+
+HRESULT DragAndDrop::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) {
+	//std::cout << "!!! gotcha!\n";
+	FORMATETC fmc = { CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+	STGMEDIUM res;
+	if (pDataObj->GetData(&fmc, &res) != S_OK) {
+		std::cout << "cannot get data from drop\n";
+	    return S_FALSE;
+	}
+	HDROP hdrop = (HDROP) res.hGlobal;
+	UINT file_count = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
+	for (int i = 0; i < file_count; i++) {
+  	  wchar_t file[MAX_PATH];
+	  DragQueryFile(hdrop, i, file, MAX_PATH);
+	  if (obj_root && ren)
+	    load_objects(obj_root, SFW(file), ren);
+	}
+
+	if (file_count && ren)
+	  ren->reset_camera();
+	
+	ReleaseStgMedium(&res);
+	return S_OK;
+}
+#endif
+
+const int geom_view::LEFT_BUTTON = GLFW_MOUSE_BUTTON_LEFT;
+const int geom_view::MIDDLE_BUTTON = GLFW_MOUSE_BUTTON_MIDDLE;
+const int geom_view::RIGHT_BUTTON = GLFW_MOUSE_BUTTON_RIGHT;
+
 geom_view::geom_view() {
+  viewControls.rotateButton = LEFT_BUTTON;
+  viewControls.panButton = MIDDLE_BUTTON;
+  viewControls.selectButton = RIGHT_BUTTON;
+  
 	iface = new imgui_interface;
 }
 
 geom_view::~geom_view() {
-	delete iface;
+  if(obj_root)
+    delete obj_root;
+  obj_root = nullptr;
+  if(ren_ptr)
+    delete ren_ptr;
+  ren_ptr = nullptr;
+  if(fb2)
+    delete fb2;
+  fb2 = nullptr;
+  
+  iface->close();
+  delete iface;
+}
+
+void geom_view::setOffsсreen(int nx, int ny) {
+  if(iface && iface->inited) {
+    std::cerr << "ERROR setting ofsscreen mode, please set offscreen mode prior to initialization\n";
+    return;
+  }
+  offscreen = true;
+  screenGeo[0] = nx;
+  screenGeo[1] = ny;
+  runInThread = false;
+}
+
+bool geom_view::isOffscreen() {
+  return offscreen;
 }
 
 void proc_xyz(int id, glass_button::eaction act, void* dat);
 
+void geom_view::getBuffer(int& nx, int& ny, std::vector<unsigned char>& buff) {
+  if(fb2) {
+    fb2->getBuffer(buff);
+    nx = fb2->fb_wx;
+    ny = fb2->fb_wy;
+  }
+}
+
+void geom_view::makeShot() {
+  if(!offscreen) {
+    std::cerr << "ERROR making of a shot, run geomView in offscreen mode with setOffscreen() before initialization\n";
+    return;
+  }
+  if(!fb2) {
+    std::cerr << "ERROR making of a shot, initialize geomView with init(...) prior to making a shot\n";
+    return;
+  }
+  mainloop_pipeline(this, fb2, nullptr, nullptr);
+}
+
 void geom_view::thread_func(geom_view* gv) {
   gv->th_id = std::this_thread::get_id();
   imgui_interface& iface = *(gv->iface);
-  iface.init();
+  iface.init(gv->offscreen);
   
   gv->obj_root = new object;
   gv->obj_root->name = "root";
-  gv->ren_ptr = new renderer;
+  gv->ren_ptr = new renderer(gv->viewControls);
+  gv->fb2 = new fb2way;
+  
   renderer& ren = *gv->ren_ptr;
-  ren.init(iface.window, gv->obj_root);
-
-  //ren.controlPointMoved = gv->controlPointMoved;
-  //ren.callbackData = gv->callbackData;
+  ren.outputGeo_ptr = &gv->screenGeo;
+  ren.init(gv->obj_root);
   
   gv->reloadLock.lock();
   for(const auto& file : gv->files) {
@@ -45,27 +152,37 @@ void geom_view::thread_func(geom_view* gv) {
 
   ren.reset_camera();
 
-  glfwSetWindowUserPointer(iface.window, (void*) &ren);
+  if(!gv->isOffscreen())
+    glfwSetWindowUserPointer(iface.window, (void*) &ren);
   
   gv->windowCreationCV.notify_all(); // unlock main thread
   
-  fb2way fb2;
-  
-  int wx, wy;
-  glfwGetWindowSize(iface.window, &wx, &wy);
-  fb2.init(wx, wy);
-  
+  gv->fb2->init(1, 1);
+
+  if(gv->isOffscreen())
+    return;
+    
   glass_buttons btns(iface.window);
   btns.init(buttons_png, buttons_png_len);
-  //btns.init(nullptr, 0);
-  btns.bgtex = fb2.fb_texture;
+  btns.bgtex = gv->fb2->fb_texture;
   
-  for(int i=0;i<11;i++)
-    btns.addButton(glass_button(i, 10+(10+32)*i, 10, 32, 32, 32*i, 0, 32*(i+1), 32, proc_xyz, &ren));
-  
+  for(int i=0;i<13;i++)
+    btns.addButton(glass_button(i, 10+(10+32)*i, 10, 32, 32, 32*i, 0, 32*(i+1), 32, proc_xyz, gv));
+
+  #ifdef _WIN32
+  if (OleInitialize(NULL) != S_OK)
+    std::cout << "failed to initialize COM\n";
+  DragAndDrop dragAndDropTarget;
+  dragAndDropTarget.obj_root = gv.obj_root;
+  dragAndDropTarget.ren = gv.ren_ptr;
+  HWND hWnd = gv.iface->nativeMSWindowHandler;
+  auto RegDADres = RegisterDragDrop(hWnd, &dragAndDropTarget);
+  if (RegDADres != S_OK)
+	std::cout << "register drag and drop failed: " << RegDADres << '\n';
+  #endif
+
   while (!glfwWindowShouldClose(iface.window))  {
     glfwWaitEvents();
-    //glfwPollEvents();
     gv->reloadLock.lock();
     if(gv->reloadFlag) {
       std::cout << "files size is " << gv->files.size() << '\n';
@@ -84,28 +201,42 @@ void geom_view::thread_func(geom_view* gv) {
     }
     gv->reloadLock.unlock();
 
-    mainloop_pipeline(&btns, &fb2, &ren, &iface, gv->obj_root, &gv->appearance);
+    mainloop_pipeline(gv, gv->fb2, &btns, &gv->appearance);
 
     glfwSwapBuffers(iface.window);
 
     glFlush();
   }
+  
+  #ifdef _WIN32
+  RevokeDragDrop(hWnd);
+  OleUninitialize();
+  #endif
+
   delete gv->obj_root;
   gv->obj_root = nullptr;
   delete gv->ren_ptr;
   gv->ren_ptr = nullptr;
+  delete gv->fb2;
+  gv->fb2 = nullptr;
+  
   iface.close();
   gv->windowCreationCV.notify_all(); // unlock main thread, it should be waiting for mainloop to finish by should close flag
+
   std::cout << "geom view thread finishes\n";
 }
 
 void geom_view::init() {
   if(!iface || iface->window)
     return;
-  std::unique_lock<std::mutex> ul(windowCreationLock);
-  std::thread th(geom_view::thread_func, this);
-  th.detach();
-  windowCreationCV.wait(ul);
+  if(runInThread)
+  {
+    std::unique_lock<std::mutex> ul(windowCreationLock);
+    std::thread th(geom_view::thread_func, this);
+    th.detach();
+    windowCreationCV.wait(ul);
+  } else
+    geom_view::thread_func(this);
 }
 
 void geom_view::close() {
@@ -215,7 +346,6 @@ void geom_view::setSelectCallBack(void* data, void (*callback)(void*, const std:
   
 }
 
-
 void geom_view::centerCamera() {
   if(ren_ptr)
     ren_ptr->center_camera();
@@ -227,6 +357,11 @@ void geom_view::resetCamera() {
     ren_ptr->reset_camera();
   glfwPostEmptyEvent();
 }  
+
+void geom_view::showOrigin(bool show) {
+  if(ren_ptr)
+    ren_ptr->o.show = show;
+}
 
 #ifdef _WIN32
 HWND geom_view::getNativeWin32Handler() {
@@ -243,7 +378,8 @@ void geom_view::addCustomControl(const std::shared_ptr<geom_view_control>& cc) {
 }
 
 void proc_xyz(int id, glass_button::eaction act, void* dat) {
-  renderer* ren = (renderer*) dat;
+  geom_view* g = (geom_view*) dat;
+  renderer* ren = g->ren_ptr;
   //std::cout << "xyz button " << id << " experienced action " << act << " rnd=" << rand() << '\n';
   vec3f dir = ren->fp_pos - ren->cam_pos;
   vec3f up = ren->cam_up;
@@ -286,6 +422,20 @@ void proc_xyz(int id, glass_button::eaction act, void* dat) {
   //background color
   if(id==10)
     ren->need_bg_color_picker = !ren->need_bg_color_picker;
+
+  if(id==11)
+    ren->o.show = !ren->o.show;
+
+  if(id==12) {
+    int nx,ny;
+    std::vector<unsigned char> buff;
+    g->getBuffer(nx,ny,buff);
+    std::ofstream of("buff.dat");
+    of << nx << '\n' << ny << '\n';
+    for(int i=0;i<nx*ny;i++)
+      of << (int) buff[i*3] << ' ' << (int) buff[i*3+1] << ' ' << (int) buff[i*3+2] << '\n';
+    of.close();
+  }
 
   if(id < 8 && dir*dir) {
     ren->cam_pos = ren->fp_pos - std::sqrt((ren->cam_pos - ren->fp_pos) * (ren->cam_pos - ren->fp_pos)) * dir;

@@ -39,8 +39,10 @@ struct imgui_interface {
 #endif
   
   std::vector<std::shared_ptr<geom_view_control>> custom_controls;
+  
+  bool inited{};
 
   void CustomControls();
-  bool init();
+  bool init(bool hideWindow = false);
   void close();
 };

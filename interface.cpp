@@ -106,7 +106,8 @@ static void checkSetWindowGeo(mainwin_config& conf) {
   }
 }
 
-bool imgui_interface::init() {
+bool imgui_interface::init(bool hideWindow) {
+  inited = true;
 
   glfwSetErrorCallback(glfw_error_callback);
    
@@ -147,7 +148,12 @@ bool imgui_interface::init() {
   // Create window with graphics context
 
   checkSetWindowGeo(mainwin_conf);
-
+  
+  if(hideWindow) {
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE); 
+  }
+  
   window = glfwCreateWindow(mainwin_conf.width, mainwin_conf.height, "3D geometry viewer", NULL, NULL);
   if (window == NULL) {
     std::cerr << "interface::init: ERROR: failed to create glfw window\n";
@@ -190,6 +196,9 @@ bool imgui_interface::init() {
 
 void imgui_interface::close() {
   // Cleanup
+  if(!inited)
+    return;
+
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   #ifndef NOIMPLOT
@@ -205,6 +214,7 @@ void imgui_interface::close() {
   glfwDestroyWindow(window);
   glfwTerminate();
   window = nullptr;
+  inited = false;
 }
 
 void imgui_interface::CustomControls() {

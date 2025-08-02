@@ -9,10 +9,12 @@
 static std::array<float, 2> getAspect(renderer* ren) {
   std::array<float, 2> aspect{1.f, 1.f};
   if(ren) {
-    int win_geo[2];
-    glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
+    if(!ren->outputGeo_ptr) {
+      std::cerr << "please link renderer.outputGeo_ptr to std::array<int,2> representing geometry of output\n";
+      return aspect;
+    }
     for(int i=0;i<2;i++)
-      aspect[i] = 2.f/static_cast<float>(win_geo[i]);
+      aspect[i] = 2.f/static_cast<float>((*ren->outputGeo_ptr)[i]);
   }
   return aspect;
 }

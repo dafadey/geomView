@@ -19,14 +19,17 @@ struct fb2way{
   int fb_wy_loc;
   int fb_wx{};
   int fb_wy{};
+  std::vector<unsigned char> buffer; // needed for output
+  
   ~fb2way();
   
-  void init(int wx, int wy);
+  void init(int wx=0, int wy=0);
   void resize(int wx, int wy);
   void set_default();
   void render();
   void set_custom();
   void set_custom_hl();
+  void getBuffer(std::vector<unsigned char>& buff);
 };
 
 struct renderer;
@@ -34,4 +37,4 @@ struct object;
 struct GLFWwindow;
 struct glass_buttons;
 
-void mainloop_pipeline(glass_buttons* btns, fb2way* fb2, renderer* renptr, imgui_interface* iface, object* obj_root, geom_view::UIappearance* = nullptr);
+void mainloop_pipeline(geom_view*, fb2way*, glass_buttons*, geom_view::UIappearance* = nullptr);

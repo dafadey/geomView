@@ -15,6 +15,7 @@
 #include <map>
 #include "OGLitem.h"
 #include "vectors.h"
+#include "geom_view.h"
 
 #ifdef GLEWINIT_INTERNAL
   extern GLenum __stdcall glewInit(void);
@@ -27,6 +28,21 @@ struct object;
 struct renderer {
   enum e_mouse_state{HOVER, ROTATE, PAN, ZOOM, SELECT_DRAG};
   enum e_draw_mode{NORMAL=0, HIGHLIGHT=1};
+  
+  renderer(geom_view::ViewControls&);
+
+  struct origin {
+    bool show{};
+    void clear();
+    void init(renderer* ren);
+    OGLvectors axes;
+    float size{.3f};
+  };
+  
+  origin o;
+
+  geom_view::ViewControls* viewControls_ptr{};
+  
   object* obj{};
 
   std::map<std::array<std::string,3>, GLuint> shaders;
@@ -45,7 +61,8 @@ struct renderer {
 
   e_draw_mode draw_mode{e_draw_mode::NORMAL};
   
-  GLFWwindow* win;
+  //GLFWwindow* win;
+  std::array<int,2>* outputGeo_ptr{};
   
   e_mouse_state mouse_state{HOVER};
   double mouse_pos[2];
@@ -54,10 +71,10 @@ struct renderer {
 
   bool nocallbacks{};
 
-  bool init(GLFWwindow*, object*);
+  bool init(object*);
   
   void render();
-  
+    
   vec2f project(const vec3f&) const;
   
   void select(bool onlyControlPoints = false) const;

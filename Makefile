@@ -23,8 +23,8 @@ endif
 
 all : $(TARGET_EXEC) $(TARGET_LIB)
 
-$(TARGET_EXEC): $(OBJS) obj/main.o obj
-	g++ -g -fPIC obj/main.o $(OBJS) -o $@ $(libs) 
+$(TARGET_EXEC): $(OBJS) obj/main.o obj/mainlib.o obj
+	g++ -g -fPIC obj/main.o obj/mainlib.o $(OBJS) -o $@ $(libs)
 
 $(TARGET_LIB): $(OBJS) obj/mainlib.o obj
 	g++ -g -fPIC -shared obj/mainlib.o $(OBJS) -o $@.$(soext) $(libs) 

@@ -9,6 +9,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include "geom_view.h"
 #include "object.h"
 #include "shaders.h"
 
@@ -28,10 +29,14 @@ static void getCamCoords(vec3f& cam_x, vec3f& cam_y, vec3f& cam_z, float& factor
 
 static void getWinGeo(float& winw, float& winh, const renderer* ren) // pixels
 {
-  int win_geo[2];
-  glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
-  winw = static_cast<float>(win_geo[0]);
-  winh = static_cast<float>(win_geo[1]);
+  if(!ren->outputGeo_ptr) {
+    std::cerr << "please link renderer.outputGeo_ptr to std::array<int,2> representing geometry of output\n";
+    winw = 1.f;
+    winh = 1.f;
+    return;
+  }
+  winw = static_cast<float>((*ren->outputGeo_ptr)[0]);
+  winh = static_cast<float>((*ren->outputGeo_ptr)[1]);
 } 
 
 vec3f getD(GLFWwindow* window, const renderer* r) {
@@ -120,8 +125,9 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
 }
 
 static void select_object(const object* obj, const renderer* ren, std::vector<std::tuple<const object*, GLfloat, size_t>>& res, bool onlyControlPoints) {
-  int win_geo[2];
-  glfwGetWindowSize(ren->win, win_geo, &win_geo[1]);
+  float winw, winh;
+  getWinGeo(winw, winh, ren);
+  int win_geo[2]{(int) winw, (int) winh};
   vec2f pos{(GLfloat) ren->mouse_pos[0] / (GLfloat) win_geo[0], -(GLfloat) ren->mouse_pos[1] / (GLfloat) win_geo[1]};
   pos = 2.f * (pos - vec2f{.5f, -.5f});
   //std::cout << "pos=(" << pos[0] << ", " << pos[1] << ")\n";
@@ -154,6 +160,16 @@ static void select_object(const object* obj, const renderer* ren, std::vector<st
   res.push_back(std::make_tuple(obj,minDist2,minId * obj->item->VBOstride() / obj->item->itemStride()));
   //std::cout << "obj: " << obj->name << " minDist2=" << minDist2 << '\n';
 }
+
+void renderer::origin::init(renderer* ren) {
+  axes.init(ren);
+}
+
+void renderer::origin::clear() {
+  axes.clear();
+}
+
+renderer::renderer(geom_view::ViewControls& vc) : viewControls_ptr(&vc) {}
 
 vec2f renderer::project(const vec3f& pt) const {
   vec4f in{pt[0], pt[1], pt[2], 1.f};
@@ -206,13 +222,13 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   
   if (r->nocallbacks)
     return;
-  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+  if (button == r->viewControls_ptr->rotateButton && action == GLFW_PRESS)
     r->mouse_state = renderer::e_mouse_state::ROTATE;
 
-  if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+  if (button == r->viewControls_ptr->panButton && action == GLFW_PRESS)
     r->mouse_state = renderer::e_mouse_state::PAN;
 
-  if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+  if (button == r->viewControls_ptr->selectButton && action == GLFW_PRESS) {
     r->mouse_state = renderer::e_mouse_state::SELECT_DRAG;
     r->select(true);
     if(r->selectionResults.size()) {
@@ -247,7 +263,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     r->mouse_state = renderer::e_mouse_state::HOVER;
   }
   
-  if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+  if (button == r->viewControls_ptr->selectButton && action == GLFW_RELEASE) {
     r->select();
   }
 }
@@ -258,15 +274,13 @@ static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
   glViewport(0, 0, width, height);
 }
 
-bool renderer::init(GLFWwindow* win_, object* obj_) {
+bool renderer::init(object* obj_) {
   obj = obj_;
   GLint GLM{};
   GLint GLm{};
   glGetIntegerv(GL_MAJOR_VERSION, &GLM);
   glGetIntegerv(GL_MINOR_VERSION, &GLm);
   std::cout << "GL:" << GLM << '.' << GLm << '\n';
-
-  win = win_;
 
   auto glew_err = glewInit();
   if (glew_err != GLEW_OK) {
@@ -282,6 +296,8 @@ bool renderer::init(GLFWwindow* win_, object* obj_) {
     }
   }
 
+  o.init(this);
+
   return true;
 }
 
@@ -295,7 +311,7 @@ static void unset_callbacks(GLFWwindow* window) {
 
 static void window_close_callback(GLFWwindow* window) {
   renderer* r = (renderer*)glfwGetWindowUserPointer(window);
-  r->win = nullptr;
+  //r->win = nullptr;
   unset_callbacks(window);
 }
 
@@ -325,25 +341,18 @@ std::vector<OGLitem*> renderer::get_items() {
 }
 
 void renderer::render() {
-  if(!win)
-    return;
   if(draw_mode==e_draw_mode::NORMAL)
     glEnable(GL_DEPTH_TEST);
   else if(draw_mode==e_draw_mode::HIGHLIGHT)
     glDisable(GL_DEPTH_TEST);
 
-  int win_geo[2];
-  glfwGetWindowSize(win, win_geo, &win_geo[1]);
+  int win_geo[2] {(*outputGeo_ptr)[0], (*outputGeo_ptr)[1]};
 
   vec3f cam_y = cam_up;
   normalize(cam_y);
   vec3f cam_z = cam_pos - fp_pos;
   normalize(cam_z);
   vec3f cam_x = cross_prod(cam_y, cam_z);
-
-  //x_new = (p - cam_pos) * cam_x;
-  //y_new = (p - cam_pos) * cam_y;
-  //z_new = (p - cam_pos) * cam_z;
   
   vec3f shift = vec3f{cam_pos * cam_x, cam_pos * cam_y, cam_pos * cam_z};
   
@@ -360,6 +369,13 @@ void renderer::render() {
  
   GLfloat f = FLT_MAX;
   GLfloat n = -FLT_MAX;
+
+  //std::cout << "f=" << f << ", n=" << n << ", cam_pos=" << cam_pos << ", cam_z=" << cam_z << '\n';
+  
+  if(parallel)
+    scale = 4.f * std::tan(56.f / 2.f * 3.14f / 180.f) / std::sqrt((cam_pos - fp_pos)*(cam_pos - fp_pos));
+  else
+    scale = 1.f/std::tan(56.f / 2.f * 3.14f / 180.f); //https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/building-basic-perspective-projection-matrix
   
   if(!obj)
     return;
@@ -377,10 +393,24 @@ void renderer::render() {
         outline_vertex[c] = item_bounds[(i>>c) & 1][c];
       GLfloat proj = static_cast<GLfloat>((outline_vertex - cam_pos) * cam_z);
       if(!std::isnan(proj) && !std::isinf(proj)) {
-        f = f < proj ? f : proj;
-        n = n > proj ? n : proj;
+        f = std::min(f, proj);
+        n = std::max(n, proj);
       }
     }
+  }
+  if(o.show) {
+    GLfloat proj = static_cast<GLfloat>((fp_pos - cam_pos) * cam_z);
+    f = std::min(f, proj);
+    n = std::max(n, proj);
+    proj = static_cast<GLfloat>((fp_pos + o.size/scale*vec3f{1.f, .0f, .0f} - cam_pos) * cam_z);
+    f = std::min(f, proj);
+    n = std::max(n, proj);
+    proj = static_cast<GLfloat>((fp_pos + o.size/scale*vec3f{.0f, 1.f, .0f} - cam_pos) * cam_z);
+    f = std::min(f, proj);
+    n = std::max(n, proj);
+    proj = static_cast<GLfloat>((fp_pos + o.size/scale*vec3f{.0f, .0f, 1.f} - cam_pos) * cam_z);
+    f = std::min(f, proj);
+    n = std::max(n, proj);
   }
   
   //robustness
@@ -393,16 +423,7 @@ void renderer::render() {
 
     f+=eps;
     n-=eps;
-  }
-  
-  
-  //std::cout << "f=" << f << ", n=" << n << ", cam_pos=" << cam_pos << ", cam_z=" << cam_z << '\n';
-  
-  if(parallel)
-    scale = 4.f * std::tan(56.f / 2.f * 3.14f / 180.f) / std::sqrt((cam_pos - fp_pos)*(cam_pos - fp_pos));
-  else
-    scale = 1.f/std::tan(56.f / 2.f * 3.14f / 180.f); //https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/building-basic-perspective-projection-matrix
-
+  }  
   
   /* 
    *  0  1  2  3
@@ -437,6 +458,14 @@ void renderer::render() {
 
   for(auto& item : items) {
     item->draw(view_matrix.data(), proj_matrix.data(), light);
+  }
+  
+  if(o.show) {
+    o.clear();
+    o.axes.addLine(std::array<vec3f,2>{fp_pos, fp_pos + vec3f{o.size/scale, 0, 0}}, vec3f{1.f, .0f, .0f});
+    o.axes.addLine(std::array<vec3f,2>{fp_pos, fp_pos + vec3f{0, o.size/scale, 0}}, vec3f{.0f, .8f, .0f});
+    o.axes.addLine(std::array<vec3f,2>{fp_pos, fp_pos + vec3f{0, 0, o.size/scale}}, vec3f{.0f, .0f, 1.f});
+    o.axes.draw(view_matrix.data(), proj_matrix.data(), light);
   }
 }
 

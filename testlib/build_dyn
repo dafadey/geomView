@@ -2,3 +2,4 @@
 g++ -O3 -g test.cpp -I../ ../libgeom_view.so -Wl,-rpath=`pwd`/../ -o test_dyn
 g++ -O3 -g test_files.cpp -I../ ../libgeom_view.so -Wl,-rpath=`pwd`/../ -o test_files_dyn
 g++ -O3 -g test_controls.cpp -I../ ../libgeom_view.so -Wl,-rpath=`pwd`/../ -o test_controls
+g++ -O3 -g test_offscreen.cpp -I../ ../libgeom_view.so -Wl,-rpath=`pwd`/../ -o test_offscreen

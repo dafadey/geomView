@@ -205,6 +205,7 @@ namespace ImGui {
   }
 
   bool ObjectsControl(object* obj, renderer* ren) {
+    bool redraw{};
     ImGui::Begin("objects");
     if (Button("open"))
       OpenPopup("open file");
@@ -402,6 +403,7 @@ namespace ImGui {
       }
 
       EndPopup();
+      redraw = true;
     }
 
     if (BeginPopupModal("open recent", NULL, ImGuiWindowFlags_None)) {
@@ -420,6 +422,7 @@ namespace ImGui {
       if (Button("close"))
         CloseCurrentPopup();
       EndPopup();
+      redraw = true;
     }
     
     static char tickfilter[128]="*";
@@ -436,9 +439,9 @@ namespace ImGui {
     if(doFilterTick)
       FilterTickObject(obj, split(std::string(tickfilter), std::string(";")), doFilterTick==1 ? true : false);
     
-    bool redraw;
-    DoObject(obj, redraw);
-    if(redraw)
+    bool objRedraw;
+    DoObject(obj, objRedraw);
+    if(redraw || objRedraw)
       glfwPostEmptyEvent();
     ImGui::End();
     return true;
@@ -517,6 +520,9 @@ namespace ImGui {
 
     ColorEdit3("bg color", ren->bg_color.data());
     
+    if(modified)
+      glfwPostEmptyEvent();
+      
     return modified;
   }
   
