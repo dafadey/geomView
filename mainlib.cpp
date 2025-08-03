@@ -11,6 +11,7 @@
 #include "fb2way.h"
 #include "glass_buttons.h"
 #include "buttons.png.inl"
+#include "grpng_reader.h"
 #include "tools.h"
 
 #ifdef _WIN32
@@ -91,7 +92,7 @@ geom_view::~geom_view() {
   delete iface;
 }
 
-void geom_view::setOffsсreen(int nx, int ny) {
+void geom_view::setOffscreen(int nx, int ny) {
   if(iface && iface->inited) {
     std::cerr << "ERROR setting ofsscreen mode, please set offscreen mode prior to initialization\n";
     return;
@@ -173,9 +174,9 @@ void geom_view::thread_func(geom_view* gv) {
   if (OleInitialize(NULL) != S_OK)
     std::cout << "failed to initialize COM\n";
   DragAndDrop dragAndDropTarget;
-  dragAndDropTarget.obj_root = gv.obj_root;
-  dragAndDropTarget.ren = gv.ren_ptr;
-  HWND hWnd = gv.iface->nativeMSWindowHandler;
+  dragAndDropTarget.obj_root = gv->obj_root;
+  dragAndDropTarget.ren = gv->ren_ptr;
+  HWND hWnd = gv->iface->nativeMSWindowHandler;
   auto RegDADres = RegisterDragDrop(hWnd, &dragAndDropTarget);
   if (RegDADres != S_OK)
 	std::cout << "register drag and drop failed: " << RegDADres << '\n';
@@ -430,11 +431,19 @@ void proc_xyz(int id, glass_button::eaction act, void* dat) {
     int nx,ny;
     std::vector<unsigned char> buff;
     g->getBuffer(nx,ny,buff);
-    std::ofstream of("buff.dat");
-    of << nx << '\n' << ny << '\n';
-    for(int i=0;i<nx*ny;i++)
-      of << (int) buff[i*3] << ' ' << (int) buff[i*3+1] << ' ' << (int) buff[i*3+2] << '\n';
-    of.close();
+    image img(nx, ny);
+    for(int j = 0; j < ny; j++) {
+      for(int i = 0; i < nx; i++) {
+        unsigned char* c_ptr = &buff[(j*nx + i)*3];
+        color c((double) *c_ptr, (double) *(c_ptr+1), (double) *(c_ptr+2));
+        img.set(c, i, j);
+      }
+    }
+    auto png_bin_buff = write_png_file(&img);
+    static int file_id = 0;
+    std::ofstream pngf((std::string("fb_") + std::to_string(file_id++) + std::string(".png")).c_str(), std::ios_base::binary);
+    pngf.write((const char*) png_bin_buff.data(), png_bin_buff.size());
+    pngf.close();
   }
 
   if(id < 8 && dir*dir) {

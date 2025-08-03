@@ -65,7 +65,7 @@ private:
   
 public:
   //switches to offscreen mode
-  void setOffsсreen(int nx, int ny);
+  void setOffscreen(int nx, int ny);
   bool isOffscreen();
   
   // retreives image buffer without controls and selection highlight

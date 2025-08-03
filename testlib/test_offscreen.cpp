@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
   if(argc > 1)
     file = argv[1];
   geom_view gv;
-  gv.setOffsсreen(640, 480);
+  gv.setOffscreen(640, 480);
   gv.init(file.c_str());
   gv.resetCamera();
   gv.makeShot();

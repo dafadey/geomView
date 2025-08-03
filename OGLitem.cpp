@@ -138,7 +138,6 @@ void OGLitem::copyHighlightTexToDevice() {
 
 
 
-
 void OGLtriangles::init(renderer* ren_) {
   OGLitem::init(ren_);
   

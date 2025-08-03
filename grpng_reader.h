@@ -13,15 +13,14 @@ struct color
   double red;
   double green;
   double blue;
-  double distance(color c)
-  {
+  double distance(color c) {
     return std::sqrt(std::pow(this->red - c.red,2)
               + std::pow(this->green - c.green,2)
               + std::pow(this->blue - c.blue,2));
   }
 };
 
-bool operator<(const color& c1, const color& c2) {
+static bool operator<(const color& c1, const color& c2) {
   if(c1.red!=c2.red)
     return c1.red < c2.red;
 
@@ -34,7 +33,7 @@ bool operator<(const color& c1, const color& c2) {
   return false;
 }
 
-std::ostream& operator<<(std::ostream& o, const color& c) {
+static std::ostream& operator<<(std::ostream& o, const color& c) {
   return o << '(' << c.red << ", " << c.green << ", " << c.blue << ')';
 }
 
@@ -60,10 +59,10 @@ struct image
   {
      data[x*h+y]=c;
   }
-  image() {}
+  image() = delete;
   image(int _w, int _h): w(_w), h(_h)
   {
-    data=new color[w*h];
+    data = new color[w*h];
   }
   ~image()
   {
@@ -77,7 +76,7 @@ struct my_stream {
   const char* eof;
 };
 
-void my_read_data_fn(png_struct_def* png_ptr, unsigned char* data, long unsigned int bytes_count ) {
+static void my_read_data_fn(png_struct_def* png_ptr, unsigned char* data, long unsigned int bytes_count ) {
   png_voidp io_ptr = png_get_io_ptr(png_ptr);
   auto strm = (my_stream*) io_ptr;
 
@@ -89,7 +88,7 @@ void my_read_data_fn(png_struct_def* png_ptr, unsigned char* data, long unsigned
   }
 }
 
-image* read_png_file(const char* buff, int size)
+static image* read_png_file(const char* buff, int size)
 {
   if(size < 8)
     return nullptr;
@@ -177,4 +176,73 @@ image* read_png_file(const char* buff, int size)
   free(row_pointers);
   
   return img;
+}
+
+
+static void my_write_data_fn(png_struct_def* png_ptr, unsigned char* data, long unsigned int bytes_count ) {
+  png_voidp io_ptr = png_get_io_ptr(png_ptr);
+  auto strm = (std::vector<unsigned char>*) io_ptr;
+  for(int i=0; i<bytes_count; i++)
+    strm->push_back(data[i]);
+}
+
+static void my_flush_data_fn(png_structp png_ptr) {}
+
+static std::vector<unsigned char> write_png_file(image* img)
+{
+  std::vector<unsigned char> output_buff;
+	png_structp png_ptr{};
+	png_infop info_ptr{};
+	
+	// Initialize write structure
+	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png_ptr) {
+		std::cerr << "ERROR: png cannot allocate write struct\n";
+    return output_buff;
+  }
+  
+	// Initialize info structure
+	info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr) {
+		std::cerr << "ERROR: png cannot allocate info struct\n";
+    return output_buff;
+	}
+
+	// Setup Exception handling
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		std::cerr << "ERROR: png cannot set error exception handling\n";
+    return output_buff;
+	}
+
+  png_set_write_fn(png_ptr, (png_voidp) &output_buff, (png_rw_ptr) my_write_data_fn, (png_flush_ptr) my_flush_data_fn);
+
+	// Write header (8 bit colour depth)
+	png_set_IHDR(png_ptr, info_ptr, img->w, img->h,
+			8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+			PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+
+	png_write_info(png_ptr, info_ptr);
+
+	// Allocate memory for one row (3 bytes per pixel - RGB)
+  std::vector<png_byte> row(3 * img->w * sizeof(png_byte));
+
+	// Write image data
+	for (int j = 0; j < img->h; j++) {
+		for (int i = 0; i < img->w; i++) {
+      row[i*3] = img->get(i,j).red;
+      row[i*3+1] = img->get(i,j).green;
+      row[i*3+2] = img->get(i,j).blue;
+    }
+		png_write_row(png_ptr, (png_bytep) row.data());
+	}
+
+	// End write
+	png_write_end(png_ptr, NULL);
+
+	if (info_ptr)
+    png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+	if (png_ptr)
+    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+  
+  return output_buff;
 }
