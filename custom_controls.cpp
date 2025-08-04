@@ -238,3 +238,17 @@ void geom_view_control_checkbox::display(postponed_callbacks_type& ppc) {
   ImGui::PopID();
 }
 
+//----------------------TEXTINPUT------------------------
+std::shared_ptr<geom_view_control_textinput> geom_view_control_textinput::makeCustomTextInput(const std::string& _name, int size) {
+  geom_view_control_textinput* res = new geom_view_control_textinput();
+  res->text.resize(size, 0);
+  res->name = _name;
+  return std::shared_ptr<geom_view_control_textinput>(res);
+}
+
+void geom_view_control_textinput::display(postponed_callbacks_type& ppc) {
+  ImGui::PushID(&name);
+  if(ImGui::InputText(name.c_str(), text.data(), text.size()) && callback)
+    ppc.emplace_back(postponed_callback_type{callback, callback_data});
+  ImGui::PopID();
+}

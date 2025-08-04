@@ -5,15 +5,30 @@ void moved(void* raw);
 
 void selection_callback(void* raw, const std::vector<std::tuple<std::vector<std::string>, size_t, float>>& input);
 
+std::vector<std::string> string_to_vector(const std::string& in) {
+  std::vector<std::string> res;
+  std::string current;
+  for(int i=0;i<in.size();i++) {
+    if(in.c_str()[i] == ':') {
+      res.push_back(current);
+      current = "";
+    } else
+      current += in.c_str()[i];
+  }
+  if(current.size())
+    res.push_back(current);
+  return res;
+}
+
 struct interface {
   geom_view gv;
   std::shared_ptr<geom_view_control_panel> panel;
-  std::shared_ptr<geom_view_control_button> button1;
-  std::shared_ptr<geom_view_control_button> button2;
+  std::shared_ptr<geom_view_control_button> button1, button2, button3, button11, button21;
+  std::shared_ptr<geom_view_control_textinput> text_input;
   std::shared_ptr<geom_view_control_slidevalue> fslider;
   std::shared_ptr<geom_view_control_textLabel> text_label;
   
-  bool select=true;
+  int select=0;
   
   void init(int argc, char* argv[]) {
     gv.init();
@@ -33,7 +48,7 @@ struct interface {
     button1->callback = [] (void* raw) {
                           interface* iface = reinterpret_cast<interface*>(raw);
                           iface->text_label->name = "RMB to select";
-                          iface->select = true;};
+                          iface->select = 1;};
     button1->callback_data = this;
 
     button2 = geom_view_control_button::makeCustomButton("deselect");
@@ -41,9 +56,37 @@ struct interface {
     button2->callback = [] (void* raw) {
                           interface* iface = reinterpret_cast<interface*>(raw);
                           iface->text_label->name = "RMB to deselect";
-                          iface->select = false;};
+                          iface->select = -1;};
     button2->callback_data = this;
 
+    button3 = geom_view_control_button::makeCustomButton("none");
+    panel->add(std::static_pointer_cast<geom_view_control>(button3));
+    button3->callback = [] (void* raw) {
+                          interface* iface = reinterpret_cast<interface*>(raw);
+                          iface->text_label->name = "RMB does nothing";
+                          iface->select = 0;};
+    button3->callback_data = this;
+
+    text_input = geom_view_control_textinput::makeCustomTextInput("item to select");
+    text_input->newline();
+    panel->add(std::static_pointer_cast<geom_view_control>(text_input));
+    
+    button11 = geom_view_control_button::makeCustomButton("select");
+    panel->add(std::static_pointer_cast<geom_view_control>(button11));
+    button11->callback = [] (void* raw) {
+                          interface* iface = reinterpret_cast<interface*>(raw);
+                          iface->gv.highlight(string_to_vector(iface->text_input->text.data()), true);
+                          };
+    button11->callback_data = this;
+
+    button21 = geom_view_control_button::makeCustomButton("deselect");
+    panel->add(std::static_pointer_cast<geom_view_control>(button21));
+    button21->callback = [] (void* raw) {
+                          interface* iface = reinterpret_cast<interface*>(raw);
+                          iface->gv.highlight(string_to_vector(iface->text_input->text.data()), false);
+                          };
+    button21->callback_data = this;
+    
     fslider = geom_view_control_slidevalue::makeCustomSlidevalue("value", -.1, .1);
     fslider->newline();
     fslider->vmax = 3.3;
@@ -68,6 +111,8 @@ void moved(void* raw) {
 
 void selection_callback(void* raw, const std::vector<std::tuple<std::vector<std::string>, size_t, float>>& input) {
   interface* iface = reinterpret_cast<interface*>(raw);
+  if(iface->select == 0)
+    return;
   if(input.size()) {
     iface->text_label->name = std::get<0>(input[0])[1] +":"+ std::get<0>(input[0])[0] + ":" + std::to_string(std::get<1>(input[0]));
     std::string name;
@@ -75,7 +120,7 @@ void selection_callback(void* raw, const std::vector<std::tuple<std::vector<std:
       name += std::get<0>(input[0])[i] + ':';
     name += std::to_string(std::get<1>(input[0]));
     std::cout << "highlighting \"" << name << "\"\n";
-    iface->gv.highlight(name, iface->select);
+    iface->gv.highlight(name, iface->select == 1 ? true : false);
   }
 }
 

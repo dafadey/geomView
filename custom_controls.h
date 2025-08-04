@@ -30,6 +30,9 @@ protected:
   geom_view_control() {};
 };
 
+//panel---panel---panel
+//panel---panel---panel
+//panel---panel---panel
 struct MSVC_EXPORT geom_view_control_panel : public geom_view_control {
   static std::shared_ptr<geom_view_control_panel> makeCustomPanel(const std::string& name);
   virtual void display(postponed_callbacks_type&);
@@ -38,6 +41,9 @@ protected:
   geom_view_control_panel() {};
 };
 
+//button---button---button
+//button---button---button
+//button---button---button
 struct MSVC_EXPORT geom_view_control_button : public geom_view_control {
   static std::shared_ptr<geom_view_control_button> makeCustomButton(const std::string& name);
   virtual void display(postponed_callbacks_type&);
@@ -47,6 +53,9 @@ protected:
   geom_view_control_button() {};
 };
 
+//slider(float)---slider(float)---slider(float)
+//slider(float)---slider(float)---slider(float)
+//slider(float)---slider(float)---slider(float)
 struct MSVC_EXPORT geom_view_control_slidevalue : public geom_view_control {
   static std::shared_ptr<geom_view_control_slidevalue> makeCustomSlidevalue(const std::string& name, float vmin, float vmax);
   virtual void display(postponed_callbacks_type&);
@@ -57,6 +66,9 @@ protected:
   geom_view_control_slidevalue() {};
 };
 
+//input-integer---input-integer---input-integer
+//input-integer---input-integer---input-integer
+//input-integer---input-integer---input-integer
 struct MSVC_EXPORT geom_view_control_inputInt : public geom_view_control {
   static std::shared_ptr<geom_view_control_inputInt> makeCustomInputInt(const std::string& name);
   virtual void display(postponed_callbacks_type&);
@@ -67,6 +79,9 @@ protected:
   geom_view_control_inputInt() {};
 };
 
+//label---label---label
+//label---label---label
+//label---label---label
 struct MSVC_EXPORT geom_view_control_textLabel : public geom_view_control {
   static std::shared_ptr<geom_view_control_textLabel> makeCustomTextLabel(const std::string& name);
   virtual void display(postponed_callbacks_type&);
@@ -76,6 +91,11 @@ protected:
   geom_view_control_textLabel() {};
 };
 
+//grid-view---grid-view---grid-view
+//grid-view---grid-view---grid-view
+//grid-view---grid-view---grid-view
+//this control support sorting and multiple select, callback is called on any change
+//items with properties are stored in geom_view_control_list::item structure
 struct MSVC_EXPORT geom_view_control_list : public geom_view_control {
   struct item {
     void* ptr; // for pick callback
@@ -93,6 +113,9 @@ protected:
   geom_view_control_list() {};
 };
 
+//raios(inline)---raios(inline)---raios(inline)
+//raios(inline)---raios(inline)---raios(inline)
+//raios(inline)---raios(inline)---raios(inline)
 struct MSVC_EXPORT geom_view_control_radio : public geom_view_control {
   static std::shared_ptr<geom_view_control_radio> makeCustomRadio(const std::vector<std::string>& names);
   virtual void display(postponed_callbacks_type&);
@@ -104,6 +127,9 @@ protected:
   geom_view_control_radio() {};
 };
 
+//checkbox---checkbox---checkbox
+//checkbox---checkbox---checkbox
+//checkbox---checkbox---checkbox
 struct MSVC_EXPORT geom_view_control_checkbox : public geom_view_control {
   static std::shared_ptr<geom_view_control_checkbox> makeCustomCheckBox(const std::string& name);
   virtual void display(postponed_callbacks_type&);
@@ -112,4 +138,17 @@ struct MSVC_EXPORT geom_view_control_checkbox : public geom_view_control {
   
 protected:
   geom_view_control_checkbox() {};
+};
+
+//textinput---textinput---textinput
+//textinput---textinput---textinput
+//textinput---textinput---textinput
+struct MSVC_EXPORT geom_view_control_textinput : public geom_view_control {
+  static std::shared_ptr<geom_view_control_textinput> makeCustomTextInput(const std::string& name, int size=256);
+  virtual void display(postponed_callbacks_type&);
+  std::vector<char> text;
+  void (*callback)(void*) {nullptr};
+  
+protected:
+  geom_view_control_textinput() {};
 };
