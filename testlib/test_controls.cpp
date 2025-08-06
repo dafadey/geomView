@@ -5,21 +5,6 @@ void moved(void* raw);
 
 void selection_callback(void* raw, const std::vector<std::tuple<std::vector<std::string>, size_t, float>>& input);
 
-std::vector<std::string> string_to_vector(const std::string& in) {
-  std::vector<std::string> res;
-  std::string current;
-  for(int i=0;i<in.size();i++) {
-    if(in.c_str()[i] == ':') {
-      res.push_back(current);
-      current = "";
-    } else
-      current += in.c_str()[i];
-  }
-  if(current.size())
-    res.push_back(current);
-  return res;
-}
-
 struct interface {
   geom_view gv;
   std::shared_ptr<geom_view_control_panel> panel;
@@ -28,6 +13,11 @@ struct interface {
   std::shared_ptr<geom_view_control_slidevalue> fslider;
   std::shared_ptr<geom_view_control_textLabel> text_label;
   
+  ~interface() {
+  	gv.close();
+  }
+
+
   int select=0;
   
   void init(int argc, char* argv[]) {
@@ -68,6 +58,7 @@ struct interface {
     button3->callback_data = this;
 
     text_input = geom_view_control_textinput::makeCustomTextInput("item to select");
+    text_input->setText("hi there!");
     text_input->newline();
     panel->add(std::static_pointer_cast<geom_view_control>(text_input));
     
@@ -75,7 +66,7 @@ struct interface {
     panel->add(std::static_pointer_cast<geom_view_control>(button11));
     button11->callback = [] (void* raw) {
                           interface* iface = reinterpret_cast<interface*>(raw);
-                          iface->gv.highlight(string_to_vector(iface->text_input->text.data()), true);
+                          iface->gv.highlight(geom_view::tokenize(iface->text_input->getText(), ":"), true);
                           };
     button11->callback_data = this;
 
@@ -83,7 +74,7 @@ struct interface {
     panel->add(std::static_pointer_cast<geom_view_control>(button21));
     button21->callback = [] (void* raw) {
                           interface* iface = reinterpret_cast<interface*>(raw);
-                          iface->gv.highlight(string_to_vector(iface->text_input->text.data()), false);
+                          iface->gv.highlight(geom_view::tokenize(iface->text_input->getText(), ":"), false);
                           };
     button21->callback_data = this;
     

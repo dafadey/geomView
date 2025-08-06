@@ -148,6 +148,8 @@ struct MSVC_EXPORT geom_view_control_textinput : public geom_view_control {
   virtual void display(postponed_callbacks_type&);
   std::vector<char> text;
   void (*callback)(void*) {nullptr};
+  std::string getText() const;
+  void setText(const std::string&);
   
 protected:
   geom_view_control_textinput() {};

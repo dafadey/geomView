@@ -131,7 +131,11 @@ void OGLitem::copyHighlightTexToDevice() {
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_1D, highlightTex);
   safeInitHighlight();
-  glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, highlighted.size(), 0, GL_RED, GL_UNSIGNED_BYTE, highlighted.data());
+  int texMaxSize;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texMaxSize);
+  if(highlighted.size() > texMaxSize)
+    std::cout << "hightlight texture size of " << highlighted.size() << " is not supporte maximum is " << texMaxSize << '\n';
+  glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, highlighted.size(), 0, GL_RED, GL_UNSIGNED_BYTE, highlighted.data());
   glBindTexture(GL_TEXTURE_1D, 0);
   highlightedTextureCopied = true;
 }
@@ -299,19 +303,31 @@ void OGLlines::init(renderer* ren_) {
 }
 
 void OGLvectors::init(renderer* ren_) {
-  OGLlines::init(ren_);
-  if (vao) {
-    glBindVertexArray(vao);
-    shader = ren->getShader("sha_vector.vs", "sha_line.fs", "sha_vector.gs");
-    verts_location = glGetAttribLocation(shader, "vertex_pos");
-    colors_location = glGetAttribLocation(shader, "line_color");
+  OGLitem::init(ren_);
 
-    proj_matrix_location = glGetUniformLocation(shader, "proj_matrix");
-    view_matrix_location = glGetUniformLocation(shader, "view_matrix");
-    aspect_location = glGetUniformLocation(shader, "aspect");
-    glBindVertexArray(0);
-  } else
-    std::cout << "failed to get vao\n";
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+  shader = ren->getShader("sha_vector.vs", "sha_line.fs", "sha_vector.gs");
+
+  verts_location = glGetAttribLocation(shader, "vertex_pos");
+  colors_location = glGetAttribLocation(shader, "line_color");
+
+  proj_matrix_location = glGetUniformLocation(shader, "proj_matrix");
+  view_matrix_location = glGetUniformLocation(shader, "view_matrix");
+  aspect_location = glGetUniformLocation(shader, "aspect");
+
+  highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+  mode_loc = glGetUniformLocation(shader, "mode");
+
+  #ifndef QUIET
+  std::cout << "\tattr: verts_location=" << verts_location << '\n';
+  std::cout << "\tattr: colors_location=" << colors_location << '\n';
+
+  std::cout << "\tuniform: proj_matrix_location=" << proj_matrix_location << '\n';
+  std::cout << "\tuniform: view_matrix_location=" << view_matrix_location << '\n';
+  #endif
+  
+  glBindVertexArray(0);
 }
 
 GLuint OGLlines::VBOstride() const {

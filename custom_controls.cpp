@@ -252,3 +252,20 @@ void geom_view_control_textinput::display(postponed_callbacks_type& ppc) {
     ppc.emplace_back(postponed_callback_type{callback, callback_data});
   ImGui::PopID();
 }
+
+std::string geom_view_control_textinput::getText() const {
+  for(auto it=text.begin(); it!=text.end(); it++) {
+    if(*it == 0)
+      return std::string(text.begin(), it);
+  }
+  return std::string();
+}
+
+void geom_view_control_textinput::setText(const std::string& in) {
+  if(text.size() < in.size())
+    text.resize(in.size()+1);
+  auto itv = text.begin();
+  for(auto it = in.begin(); it!= in.end(); it++, itv++)
+    *itv = *it;
+  *itv = 0; //trailing zero
+}
