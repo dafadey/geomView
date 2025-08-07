@@ -64,6 +64,26 @@ add_library(${libTarget} STATIC ${PUB_HEADERS} ${sources_lib})
 
 add_library(${dylibTarget} SHARED ${PUB_HEADERS} ${sources_lib})
 
+add_custom_target(inls ALL 
+                  DEPENDS ${CMAKE_SOURCE_DIR}/shaderRAMfs.cpp.inl ${CMAKE_SOURCE_DIR}/buttons.png.inl)
+
+add_executable(charcodegen codegen.cpp)
+
+add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/shaderRAMfs.cpp.inl
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   COMMAND charcodegen ${shaders} > shaderRAMfs.cpp.inl
+                   DEPENDS charcodegen ${shaders}
+                   VERBATIM)
+
+add_executable(charcodegenbin codegenbin.cpp)
+
+add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/buttons.png.inl
+                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   COMMAND charcodegenbin buttons.png > buttons.png.inl
+                   DEPENDS charcodegenbin buttons.png
+                   VERBATIM)
+
+
 set(MSVC_LIB_DEFINITIONS "DYNAMIC_BUILD")
 if(MSVC)
 	set(MSVC_LIB_DEFINITIONS "MSVC_DYNAMIC_BUILD")
@@ -77,24 +97,10 @@ set_target_properties(${dylibTarget} PROPERTIES PUBLIC_HEADER "${PUB_HEADERS}")
 
 add_library(commonArch STATIC ${common_sources})
 
+add_dependencies(commonArch inls)
 add_dependencies(${execTarget} commonArch)
+add_dependencies(${libTarget} commonArch)
 add_dependencies(${dylibTarget} commonArch)
-
-add_executable(charcodegen codegen.cpp)
-
-add_custom_command(OUTPUT shaderRAMfs.cpp.inl
-                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                   COMMAND charcodegen ${shaders} > shaderRAMfs.cpp.inl
-                   DEPENDS charcodegen ${shaders}
-                   VERBATIM)
-
-add_executable(charcodegenbin codegenbin.cpp)
-
-add_custom_command(OUTPUT buttons.png.inl
-                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                   COMMAND charcodegenbin buttons.png > buttons.png.inl
-                   DEPENDS charcodegenbin buttons.png
-                   VERBATIM)
 
 set(OpenGL_GL_PREFERENCE LEGACY)
 
