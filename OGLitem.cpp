@@ -6,6 +6,8 @@
 
 #include "GLFW/glfw3.h"
 
+int OGLitem::texMaxSizePow = 0;
+
 static std::array<float, 2> getAspect(renderer* ren) {
   std::array<float, 2> aspect{1.f, 1.f};
   if(ren) {
@@ -111,32 +113,53 @@ void OGLitem::init(renderer* ren_) {
     std::cout << "WARNING: highlightTex is already initialized to " << VBO << '\n';
   #endif
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_1D, highlightTex);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glBindTexture(GL_TEXTURE_1D, 0);
+  glBindTexture(GL_TEXTURE_2D, highlightTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void OGLitem::safeInitHighlight() {
   int n = VBOdata.size() / itemStride();
   while(highlighted.size() < n)
     highlighted.push_back(0);
+  int hlW = (1 << texMaxSizePow);
+  if(highlighted.size() > hlW) {
+    while(highlighted.size() % hlW != 0)
+      highlighted.push_back(0);
+  }
 }
 
 void OGLitem::copyHighlightTexToDevice() {
   if(highlightedTextureCopied == true)
     return;
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_1D, highlightTex);
+  glBindTexture(GL_TEXTURE_2D, highlightTex);
   safeInitHighlight();
-  int texMaxSize;
-  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texMaxSize);
-  if(highlighted.size() > texMaxSize)
-    std::cout << "hightlight texture size of " << highlighted.size() << " is not supporte maximum is " << texMaxSize << '\n';
-  glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, highlighted.size(), 0, GL_RED, GL_UNSIGNED_BYTE, highlighted.data());
-  glBindTexture(GL_TEXTURE_1D, 0);
+  if(!texMaxSizePow) {
+    int texMaxSize;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texMaxSize);
+    while(texMaxSize) {
+      texMaxSize = (texMaxSize >> 1);
+      texMaxSizePow++;
+    }
+    texMaxSizePow--;
+  }
+  if(highlighted.size() > (1 << (texMaxSizePow << 1)))
+    std::cout << "hightlight texture size of " << highlighted.size() << " is not supported maximum is " << (1 << (texMaxSizePow << 1)) << '\n';
+  int hlH=1;
+  int hlW = (1 << texMaxSizePow);
+  if(hlW > highlighted.size())
+    hlW = highlighted.size();
+  else {
+    hlH = (highlighted.size() >> texMaxSizePow);
+    if((hlH << texMaxSizePow) < highlighted.size())
+      hlH++;
+  }
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, hlW, hlH, 0, GL_RED, GL_UNSIGNED_BYTE, highlighted.data());
+  glBindTexture(GL_TEXTURE_2D, 0);
   highlightedTextureCopied = true;
 }
 
@@ -160,6 +183,7 @@ void OGLtriangles::init(renderer* ren_) {
 
   mode_loc = glGetUniformLocation(shader, "mode");
   highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+  texStridePow_loc = glGetUniformLocation(shader, "highlightTexStridePow");
   
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
@@ -182,11 +206,12 @@ void OGLtriangles::init(renderer* ren_) {
                       glUniformMatrix4fv(proj_matrix_location, 1, false, proj_matrix); \
                       glUniform1i(highlightTex_loc, 1); \
                       glUniform1i(mode_loc, ren->draw_mode); \
+                      glUniform1i(texStridePow_loc, OGLitem::texMaxSizePow); \
                       glActiveTexture(GL_TEXTURE1); \
-                      glBindTexture(GL_TEXTURE_1D, highlightTex);
+                      glBindTexture(GL_TEXTURE_2D, highlightTex);
                       
 #define DRAW_END()    glBindVertexArray(0); \
-                      glBindTexture(GL_TEXTURE_1D, 0); \
+                      glBindTexture(GL_TEXTURE_2D, 0); \
                       glUseProgram(0);
 
 GLuint OGLtriangles::VBOstride() const {
@@ -290,7 +315,8 @@ void OGLlines::init(renderer* ren_) {
 
   highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
   mode_loc = glGetUniformLocation(shader, "mode");
-
+  texStridePow_loc = glGetUniformLocation(shader, "highlightTexStridePow");
+  
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: colors_location=" << colors_location << '\n';
@@ -318,7 +344,8 @@ void OGLvectors::init(renderer* ren_) {
 
   highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
   mode_loc = glGetUniformLocation(shader, "mode");
-
+  texStridePow_loc = glGetUniformLocation(shader, "highlightTexStridePow");
+  
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: colors_location=" << colors_location << '\n';
@@ -426,7 +453,8 @@ void OGLpoints::init(renderer* ren_) {
 
   mode_loc = glGetUniformLocation(shader, "mode");
   highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
-  
+  texStridePow_loc = glGetUniformLocation(shader, "highlightTexStridePow");
+    
   #ifndef QUIET
   std::cout << "\tattr: verts_location=" << verts_location << '\n';
   std::cout << "\tattr: radii_location=" << radii_location << '\n';
@@ -455,6 +483,11 @@ void OGLControlPoints::init(renderer* ren_) {
     proj_matrix_location = glGetUniformLocation(shader, "proj_matrix");
     view_matrix_location = glGetUniformLocation(shader, "view_matrix");
     aspect_location = glGetUniformLocation(shader, "aspect");
+    
+    mode_loc = glGetUniformLocation(shader, "mode");
+    highlightTex_loc = glGetUniformLocation(shader, "highlightTex");
+    texStridePow_loc = glGetUniformLocation(shader, "highlightTexStridePow");
+
     glBindVertexArray(0);
   }
   #ifndef QUIET

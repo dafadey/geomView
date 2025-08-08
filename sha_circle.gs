@@ -4,7 +4,8 @@ layout(points) in;
 layout(line_strip, max_vertices = 64) out;
 
 uniform int mode; // regular=0, hilight=1 
-uniform sampler1D highlightTex;
+uniform sampler2D highlightTex;
+uniform int highlightTexStridePow;
 
 in vec3 vColor[];
 in float vSides[];
@@ -15,7 +16,7 @@ const float PI = 3.1415926;
 
 void main()
 {
-  if(mode == 1 && texelFetch(highlightTex, gl_PrimitiveIDIn, 0).x == .0)
+  if(mode == 1 && texelFetch(highlightTex, ivec2(gl_PrimitiveIDIn & ((1 << highlightTexStridePow) - 1), gl_PrimitiveIDIn >> highlightTexStridePow), 0).x == .0)
     return;
   
   fgcolor = vColor[0];

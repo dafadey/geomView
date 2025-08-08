@@ -40,12 +40,14 @@ struct OGLitem {
   GLint view_matrix_location{};
   GLint aspect_location{};
   GLint mode_loc{};
+  GLint texStridePow_loc{};
 
   bool vboCopied{};
   bool highlightedTextureCopied{};
   int memory() const;
   bool isControlPoints() const;
   void highlight(int i, bool value);
+  static int texMaxSizePow;
 
 };
 

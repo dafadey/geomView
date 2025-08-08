@@ -17,15 +17,15 @@ struct interface {
   	gv.close();
   }
 
-
   int select=0;
   
   void init(int argc, char* argv[]) {
     gv.init();
   
-    if(argc==2) {
+    if(argc>1) {
       std::vector<std::pair<std::string, bool>> files;
-      files.push_back(std::pair<std::string, bool>(argv[1], true));
+      for(int i=1;i<argc;i++)
+        files.push_back(std::pair<std::string, bool>(argv[i], true));
       gv.reload(files, true);
     }
     
