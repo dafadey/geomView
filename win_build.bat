@@ -1,5 +1,11 @@
 set WD=%cd%
 
+set ARCH=x86
+
+if "%~1" NEQ "" set ARCH=%~1
+
+echo ARCH=%ARCH%
+
 echo current working directory is %WD%
 
 set glew=glew-cmake-glew-cmake-2.1.0
@@ -33,7 +39,7 @@ cd %~3 || goto:eof
 if not exist build_MSVC mkdir build_MSVC
 if not exist install_MSVC mkdir install_MSVC
 cd build_MSVC
-cmake ../ -DCMAKE_INSTALL_PREFIX=../install_MSVC %~4
+cmake ../ -A %ARCH% -DCMAKE_INSTALL_PREFIX=../install_MSVC %~4
 cmake --build . --config Release --target INSTALL
 cd ../../
 goto:eof
@@ -42,7 +48,7 @@ goto:eof
 if not exist build_MSVC mkdir build_MSVC
 if not exist install_MSVC mkdir install_MSVC
 cd build_MSVC
-cmake ../ -DCMAKE_INSTALL_PREFIX=../install_MSVC %~1
+cmake ../ -A %ARCH% -DCMAKE_INSTALL_PREFIX=../install_MSVC %~1
 cmake --build . --config Release --target INSTALL
 cd ../
 goto:eof
