@@ -167,6 +167,7 @@ void geom_view_control_list::display(postponed_callbacks_type& ppc) {
     ImGui::TableHeadersRow();
     for(int i_id = 0; i_id < items.size(); i_id++) {
       auto& i = items[i_id];
+      bool initial_selected_status = i.selected;
       if(i.props.size() != n)
         continue;
       ImGui::PushID(reinterpret_cast<size_t>(i.ptr));
@@ -176,6 +177,11 @@ void geom_view_control_list::display(postponed_callbacks_type& ppc) {
         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
         bool selected_prev_state = i.selected;
         bool hit = ImGui::Selectable(i.props[r].c_str(), i.selected, selectable_flags, ImVec2(0.f, .0f));
+        if(hit) {
+          last_item_hit = i_id;
+          if(do_not_togle_selection)
+            selected_status_changed = true;
+        }
         i.selected ^= hit;
         if(hit) {
           if (!ImGui::GetIO().KeyCtrl) {
@@ -191,6 +197,8 @@ void geom_view_control_list::display(postponed_callbacks_type& ppc) {
         if(i.selected != selected_prev_state)
           selected_status_changed = true;
       }
+      if(do_not_togle_selection)
+        i.selected = initial_selected_status;
       ImGui::PopID();
     }
     ImGui::EndTable();

@@ -107,6 +107,8 @@ struct MSVC_EXPORT geom_view_control_list : public geom_view_control {
   virtual void display(postponed_callbacks_type&);
   std::vector<std::string> header;
   std::vector<item> items; // removes all previous content with new one
+  int last_item_hit = -1;
+  bool do_not_togle_selection = false;
   void (*callback)(void*) {nullptr}; //called when something is changed
   
 protected:

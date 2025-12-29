@@ -436,7 +436,7 @@ void proc_xyz(int id, glass_button::eaction act, void* dat) {
       for(int i = 0; i < nx; i++) {
         unsigned char* c_ptr = &buff[(j*nx + i)*3];
         color c((double) *c_ptr, (double) *(c_ptr+1), (double) *(c_ptr+2));
-        img.set(c, i, j);
+        img.set(c, i, ny-1-j);
       }
     }
     auto png_bin_buff = write_png_file(&img);

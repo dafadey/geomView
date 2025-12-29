@@ -311,7 +311,7 @@ bool reload_files(object* obj_root, renderer* ren, const std::vector<std::pair<s
 }
 
 bool changeVisibility_for_files(object* obj_root, renderer* ren, const std::vector<std::pair<std::string, bool>>& files) {
-  std::map<std::string, object*> items; // objects to remove;
+  std::map<std::string, object*> items;
   
   for(object* c : obj_root->children())
     items[c->name] = c;
