@@ -27,7 +27,7 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - name: build win32
-        run: .github/workflows/win32_build.bat
+        run: win_build.bat "x86"
       - name: upload geom_view bundle
         uses: actions/upload-artifact@v4
         with:
