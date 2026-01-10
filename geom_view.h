@@ -99,10 +99,12 @@ public:
   //keeps all mentioned if flag is false
   //deletes all previously loaded but not mentioned
   //reloads specified if flag is true
+  //USE IT IN CALLBACK ONLY ONCE! SECOND CALL FROM WITHIN CALLBACK WILL HANG
   void reload(const std::vector<std::pair<std::string, bool>>& files, bool resetCamera = false);
   
   //sets visibility for listed
   //does not modify those not listed
+  //USE IT IN CALLBACK ONLY ONCE! SECOND CALL FROM WITHIN CALLBACK WILL HANG
   void visibilities(const std::vector<std::pair<std::string, bool>>& vis);
   
   void setCallBack(void*, void (*controlPointMoved)(void*, std::vector<std::string>& sId, double x, double y, double z));

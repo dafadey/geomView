@@ -6,9 +6,9 @@
 #include <imgui.h>
 
 void geom_view_control::newline() {
-  std::cout << "!!!!!!!!!!!!!!!!!!this=" << this << '\n';
+  //std::cout << "!!!!!!!!!!!!!!!!!!this=" << this << '\n';
   line++;
-  std::cout << "!!!!!!!!!!!!!!!!!!this=" << this << " line=" << line << ':' << &line << '\n';
+  //std::cout << "!!!!!!!!!!!!!!!!!!this=" << this << " line=" << line << ':' << &line << '\n';
 }
 
 void geom_view_control::add(const std::shared_ptr<geom_view_control>& child) {
@@ -174,26 +174,30 @@ void geom_view_control_list::display(postponed_callbacks_type& ppc) {
       ImGui::TableNextRow(ImGuiTableRowFlags_None, .0f);
       for(int r=0; r<n; r++) {
         ImGui::TableSetColumnIndex(r);
-        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_AllowItemOverlap;
+        if(spanWholeRow)
+          selectable_flags |= ImGuiSelectableFlags_SpanAllColumns;
         bool selected_prev_state = i.selected;
         bool hit = ImGui::Selectable(i.props[r].c_str(), i.selected, selectable_flags, ImVec2(0.f, .0f));
-        if(hit) {
-          last_item_hit = i_id;
-          if(do_not_togle_selection)
-            selected_status_changed = true;
-        }
+        if(!hit)
+          continue;
+        last_row_hit = r;
+        last_item_hit = i_id;
+        if(do_not_togle_selection)
+          selected_status_changed = true;
+
         i.selected ^= hit;
-        if(hit) {
-          if (!ImGui::GetIO().KeyCtrl) {
-            for(int j_id = 0; j_id < items.size(); j_id++) {
-              if(i_id!=j_id) {
-                selected_status_changed = items[j_id].selected ? true : selected_status_changed;
-                items[j_id].selected = false;
-              }
+
+        if (!do_not_togle_selection && !ImGui::GetIO().KeyCtrl) {
+          for(int j_id = 0; j_id < items.size(); j_id++) {
+            if(i_id!=j_id) {
+              selected_status_changed = items[j_id].selected ? true : selected_status_changed;
+              items[j_id].selected = false;
             }
-            i.selected = true;
           }
+          i.selected = true;
         }
+
         if(i.selected != selected_prev_state)
           selected_status_changed = true;
       }
