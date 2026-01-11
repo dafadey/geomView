@@ -23,6 +23,7 @@ struct MSVC_EXPORT geom_view_control {
   void clear();
   bool remove(const std::shared_ptr<geom_view_control>& child);
   void newline();
+  void newline(int);
   virtual void display(postponed_callbacks_type&) = 0;
   void* callback_data = nullptr;
   bool visible{true};

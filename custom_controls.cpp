@@ -6,9 +6,11 @@
 #include <imgui.h>
 
 void geom_view_control::newline() {
-  //std::cout << "!!!!!!!!!!!!!!!!!!this=" << this << '\n';
   line++;
-  //std::cout << "!!!!!!!!!!!!!!!!!!this=" << this << " line=" << line << ':' << &line << '\n';
+}
+
+void geom_view_control::newline(int current) {
+  line = current+1;
 }
 
 void geom_view_control::add(const std::shared_ptr<geom_view_control>& child) {
@@ -46,14 +48,19 @@ void geom_view_control_panel::display(postponed_callbacks_type& ppc) {
   ImGui::Begin(name.c_str());
   if(children.size()) {
     int line = children[0]->line;
+    bool first = true;
     for(auto& child : children) {
+      //std::cout << "child: " << child->name << " line=" << child->line << '\n';
       if(!child->visible)
         continue;
       if(child->line != line)
         line = child->line;
-      else
-        ImGui::SameLine();
+      else {
+        if(!first)
+          ImGui::SameLine();
+      }
       child->display(ppc);
+      first = false;
     }
   }
   ImGui::End();
