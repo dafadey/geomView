@@ -537,3 +537,22 @@ void renderer::reset_camera() {
   cam_up = vec3f{0.f,1.f,0.f};
 
 }
+
+bool renderer::view_aligned() const {
+  auto dir = cam_pos-fp_pos;
+  return (dir[0] == 0 && dir[1] == 0) || (dir[0] == 0 && dir[2] == 0) || (dir[1] == 0 && dir[2] == 0);
+}
+
+
+vec3f renderer::mouse_pos_in_model() const {
+  float w = (*outputGeo_ptr)[0];
+  float h = (*outputGeo_ptr)[1];
+  vec3f view_pos{mouse_pos[0]/w*2.-1., mouse_pos[1]/h*2.-1., 0};
+  view_pos[0] /= scale;
+  view_pos[1] /= -scale/h*w;
+  vec3f cam_x, cam_y, cam_z;
+  float factor;
+  getCamCoords(cam_x, cam_y, cam_z, factor, this);
+  vec3f pos = cam_x * view_pos[0] + cam_y * view_pos[1] + fp_pos;
+  return pos;
+}

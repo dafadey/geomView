@@ -85,6 +85,10 @@ struct renderer {
 
   vec3f center_camera();
 
+  bool view_aligned() const;
+  
+  vec3f mouse_pos_in_model() const;
+
   void reset_camera();
 
   std::vector<OGLitem*> get_items();
