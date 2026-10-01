@@ -73,6 +73,7 @@ public:
   //  pixel format is 3 chars (RGB)
   //  pixels are in row order
   void getBuffer(int& nx, int& ny, std::vector<unsigned char>& buff);
+  static void saveBufferAsPNG(int nx, int ny, std::vector<unsigned char>& buff, const char* filename);
   void makeShot();
   
   geom_view();
@@ -114,6 +115,8 @@ public:
   void centerCamera();
   
   void resetCamera();
+
+  void setView(const std::array<double,3>& cam_pos, const std::array<double,3>& focal_point, const std::array<double,3>& cam_up);
 
   void showOrigin(bool);
 

@@ -348,6 +348,8 @@ void renderer::render() {
 
   int win_geo[2] {(*outputGeo_ptr)[0], (*outputGeo_ptr)[1]};
 
+  glViewport(0, 0, win_geo[0], win_geo[1]);
+
   vec3f cam_y = cam_up;
   normalize(cam_y);
   vec3f cam_z = cam_pos - fp_pos;
@@ -456,6 +458,22 @@ void renderer::render() {
   */
   GLfloat light[3]{static_cast<GLfloat>(light_dir[0]), static_cast<GLfloat>(light_dir[1]), static_cast<GLfloat>(light_dir[2])};
 
+/*
+  std::cout << "cam_pos: " << cam_pos << " fp_pos: " << fp_pos << " outputGeo: " << (*outputGeo_ptr)[0] << 'x' << (*outputGeo_ptr)[1] << '\n';
+  for(int j=0;j<4;j++) {
+    std::cout << '\t';
+    for(int i=0;i<4;i++)
+      std::cout << view_matrix[i+j*4] << ' ';
+    std::cout << '\n';
+  }
+  for(int j=0;j<4;j++) {
+    std::cout << '\t';
+    for(int i=0;i<4;i++)
+      std::cout << proj_matrix[i+j*4] << ' ';
+    std::cout << '\n';
+  }
+*/
+
   for(auto& item : items) {
     item->draw(view_matrix.data(), proj_matrix.data(), light);
   }
@@ -547,7 +565,7 @@ bool renderer::view_aligned() const {
 vec3f renderer::mouse_pos_in_model() const {
   float w = (*outputGeo_ptr)[0];
   float h = (*outputGeo_ptr)[1];
-  vec3f view_pos{mouse_pos[0]/w*2.-1., mouse_pos[1]/h*2.-1., 0};
+  vec3f view_pos{(float) mouse_pos[0] / w * 2.f - 1.f, (float) mouse_pos[1] / h * 2.f - 1.f, .0f};
   view_pos[0] /= scale;
   view_pos[1] /= -scale/h*w;
   vec3f cam_x, cam_y, cam_z;

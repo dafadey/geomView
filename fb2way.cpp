@@ -160,7 +160,6 @@ void fb2way::resize(int wx, int wy) {
   //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, wx, wy, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, wx, wy, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glBindTexture(GL_TEXTURE_2D, 0);
-
 }
 
 void fb2way::getBuffer(std::vector<unsigned char>& buff) {
@@ -230,10 +229,11 @@ fb2way::~fb2way() {
 }
 
 void mainloop_pipeline(geom_view* gv, fb2way* fb2, glass_buttons* btns, geom_view::UIappearance* appearance) {
+    
     renderer* renptr = gv->ren_ptr;
     imgui_interface* iface = gv->iface;
     object* obj_root = gv->obj_root;
-  
+
     GLFWwindow* window = iface->window;
     geom_view::UIappearance default_UIappearance;
     if(!appearance)
@@ -246,7 +246,7 @@ void mainloop_pipeline(geom_view* gv, fb2way* fb2, glass_buttons* btns, geom_vie
       glfwGetWindowSize(window, &wx, &wy);
       gv->screenGeo = std::array<int,2> {wx, wy};
     }
-    
+
     if(fb2) {
       fb2->set_custom_hl();
       fb2->resize(gv->screenGeo[0], gv->screenGeo[1]);

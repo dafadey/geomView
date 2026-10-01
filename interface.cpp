@@ -82,12 +82,15 @@ static void checkSetWindowGeo(mainwin_config& conf) {
   GLFWmonitor** monitors = glfwGetMonitors(&count);
   bool placementIsOK = false;
   if(conf.valid()) {
+    //std::cout << "conf is valid\n";
     //for eachmonitor check if current window rectangle stored in conf overlaps with monitor work area
     //if not then place window to first monitor
     for(int i=0;i<count;i++) {
       int posx, posy, width, height;
       glfwGetMonitorWorkarea(monitors[i], &posx, &posy, &width, &height);
       bool OK = validRectsOverlap(posx, posy, width, height, conf.posx, conf.posy, conf.width, conf.height);
+      //std::cout << "conf: " << conf.width << 'x' << conf.height << '\n';
+      //std::cout << "display: " << width << 'x' << height << '\n';
       //it is also weird if in any direction window exceeds monitor workarea
       OK &= !((conf.posx < posx && conf.posx + conf.width > posx + width) || (conf.posy < posy && conf.posy + conf.height > posy + height));
       placementIsOK |= OK;
@@ -95,6 +98,7 @@ static void checkSetWindowGeo(mainwin_config& conf) {
   }
   
   if(!placementIsOK) {
+    //std::cout << "placement is not OK\n";
     GLFWmonitor* primary = glfwGetPrimaryMonitor();
     if(primary) {
       glfwGetMonitorWorkarea(primary, &conf.posx, &conf.posy, &conf.width, &conf.height);

@@ -484,3 +484,36 @@ void geom_view::highlight(const std::string& item, bool value) {
 std::vector<std::string> geom_view::tokenize(const std::string& in, const std::string& delim) {
   return split(in, delim);
 }
+
+void geom_view::saveBufferAsPNG(int nx, int ny, std::vector<unsigned char>& buff, const char* filename) {
+  image img(nx, ny);
+  for(int j = 0; j < ny; j++) {
+    for(int i = 0; i < nx; i++) {
+      unsigned char* c_ptr = &buff[(j*nx + i)*3];
+      color c((double) *c_ptr, (double) *(c_ptr+1), (double) *(c_ptr+2));
+      img.set(c, i, ny-1-j);
+    }
+  }
+  auto png_bin_buff = write_png_file(&img);
+  std::ofstream pngf(filename, std::ios_base::binary);
+  pngf.write((const char*) png_bin_buff.data(), png_bin_buff.size());
+  pngf.close();
+}
+
+void geom_view::setView(const std::array<double,3>& cam_pos, const std::array<double,3>& focal_point, const std::array<double,3>& cam_up) {
+  if(ren_ptr) {
+    for(int i=0;i<3;i++)
+      ren_ptr->cam_pos[i] = cam_pos[i];
+    for(int i=0;i<3;i++)
+      ren_ptr->fp_pos[i] = focal_point[i];
+    vec3f& camup = ren_ptr->cam_up;
+    camup = vec3f{cam_up[0], cam_up[1], cam_up[2]};
+    vec3f dir = ren_ptr->fp_pos - ren_ptr->cam_pos;
+    normalize(dir);
+    camup = camup - (camup * dir) * dir;
+    normalize(camup);
+  } else {
+    std::cerr << "geom_view ERROR: failed to set camera position, there is no renderer object yet\n"; 
+  }
+  
+}
