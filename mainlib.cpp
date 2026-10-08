@@ -515,5 +515,10 @@ void geom_view::setView(const std::array<double,3>& cam_pos, const std::array<do
   } else {
     std::cerr << "geom_view ERROR: failed to set camera position, there is no renderer object yet\n"; 
   }
-  
 }
+
+void geom_view::setBackgroundColor(double r, double g, double b) {
+  if(ren_ptr)
+    ren_ptr->bg_color = {r,g,b};
+}
+

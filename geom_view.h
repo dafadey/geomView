@@ -117,6 +117,8 @@ public:
   void resetCamera();
 
   void setView(const std::array<double,3>& cam_pos, const std::array<double,3>& focal_point, const std::array<double,3>& cam_up);
+  
+  void setBackgroundColor(double r, double g, double b);
 
   void showOrigin(bool);
 

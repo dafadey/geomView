@@ -299,12 +299,17 @@ void mainloop_pipeline(geom_view* gv, fb2way* fb2, glass_buttons* btns, geom_vie
       ImGui::Begin("camera");
       ImGui::CameraControl(&ren);
       ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::Text("Memory: %d Mb", obj_root->memory() /1024/1024);
+      //ImGui::Text("Memory: %d Mb", obj_root->memory() /1024/1024);
       if(ren.view_aligned() && ren.parallel) {
         auto p = ren.mouse_pos_in_model();
         ImGui::Text(("pos: "+std::to_string(p[0]) + ' ' +std::to_string(p[1])+ ' ' + std::to_string(p[2])).c_str());
       } else
         ImGui::Text("");
+
+      ImGui::Text("fp : (%.3f,%.3f,%.3f)", ren.fp_pos[0], ren.fp_pos[1], ren.fp_pos[2]);
+      ImGui::Text("cp : (%.3f,%.3f,%.3f)", ren.cam_pos[0], ren.cam_pos[1], ren.cam_pos[2]);
+      ImGui::Text("up : (%.3f,%.3f,%.3f)", ren.cam_up[0], ren.cam_up[1], ren.cam_up[2]);
+
       ImGui::End();
     }
 
