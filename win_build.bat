@@ -12,7 +12,7 @@ echo current working directory is %WD%
 set glew=glew-cmake-glew-cmake-2.1.0
 
 REM GLEW
-call :buildURL https://github.com/Perlmint/glew-cmake/archive/refs/tags/glew-cmake-2.1.0.tar.gz glew-2.1.0.tar.gz glew-cmake-glew-cmake-2.1.0 "-Dglew-cmake_BUILD_SHARED=OFF"
+call :buildURL https://github.com/Perlmint/glew-cmake/archive/refs/tags/glew-cmake-2.1.0.tar.gz glew-2.1.0.tar.gz glew-cmake-glew-cmake-2.1.0 "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dglew-cmake_BUILD_SHARED=OFF"
 copy glew-cmake-glew-cmake-2.1.0\install_MSVC\lib\glew.lib glew-cmake-glew-cmake-2.1.0\install_MSVC\lib\libglew32.lib
 if not exist %glew%\install_MSVC\lib\cmake mkdir %glew%\install_MSVC\lib\cmake
 if not exist %glew%\install_MSVC\lib\cmake\glew mkdir %glew%\install_MSVC\lib\cmake\glew
