@@ -23,12 +23,12 @@ echo   INTERFACE_LINK_LIBRARIES "opengl32;glu32") >> %glew%\install_MSVC\lib\cma
 REM GLFW
 call :buildURL https://github.com/glfw/glfw/archive/refs/tags/3.4.tar.gz glfw-3.4.tar.gz glfw-3.4 "-DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF"
 REM ZLIB
-call :buildURL http://zlib.net/zlib-1.3.1.tar.gz zlib-1.3.1.tar.gz zlib-1.3.1 "-DZLIB_BUILD_EXAMPLES=OFF"
+call :buildURL http://zlib.net/zlib-1.3.2.tar.gz zlib-1.3.2.tar.gz zlib-1.3.2 "-DZLIB_BUILD_EXAMPLES=OFF"
 REM LIBPNG
-call :buildURL http://prdownloads.sourceforge.net/libpng/libpng-1.6.49.tar.gz libpng-1.6.49.tar.gz libpng-1.6.49 "-DZLIB_ROOT=%WD%\zlib-1.3.1\install_MSVC -DPNG_SHARED=OFF -DPNG_TESTS=OFF -DPNG_TOOLS=OFF"
+call :buildURL http://prdownloads.sourceforge.net/libpng/libpng-1.6.49.tar.gz libpng-1.6.49.tar.gz libpng-1.6.49 "-DZLIB_ROOT=%WD%\zlib-1.3.2\install_MSVC -DPNG_SHARED=OFF -DPNG_TESTS=OFF -DPNG_TOOLS=OFF"
 
 REM GEOMVIEW
-call :build "-DGLEW_DIR=%WD%\glew-cmake-glew-cmake-2.1.0\install_MSVC\lib\cmake\glew -Dglfw3_DIR=%WD%\glfw-3.4\install_MSVC\lib\cmake\glfw3 -DPNG_INCLUDE_DIR=%WD%\libpng-1.6.49\install_MSVC\include -DPNG_LIBRARY=%WD%\libpng-1.6.49\install_MSVC\lib\libpng16_static.lib -DZLIB_LIBRARY=%WD%\zlib-1.3.1\install_MSVC\lib\zlibstatic.lib"
+call :build "-DGLEW_DIR=%WD%\glew-cmake-glew-cmake-2.1.0\install_MSVC\lib\cmake\glew -Dglfw3_DIR=%WD%\glfw-3.4\install_MSVC\lib\cmake\glfw3 -DPNG_INCLUDE_DIR=%WD%\libpng-1.6.49\install_MSVC\include -DPNG_LIBRARY=%WD%\libpng-1.6.49\install_MSVC\lib\libpng16_static.lib -DZLIB_LIBRARY=%WD%\zlib-1.3.2\install_MSVC\lib\zs.lib"
 
 echo.&goto:eof
 

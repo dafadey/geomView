@@ -507,7 +507,7 @@ void geom_view::setView(const std::array<double,3>& cam_pos, const std::array<do
     for(int i=0;i<3;i++)
       ren_ptr->fp_pos[i] = focal_point[i];
     vec3f& camup = ren_ptr->cam_up;
-    camup = vec3f{cam_up[0], cam_up[1], cam_up[2]};
+    camup = vec3f{(const float) cam_up[0], (const float) cam_up[1], (const float) cam_up[2]};
     vec3f dir = ren_ptr->fp_pos - ren_ptr->cam_pos;
     normalize(dir);
     camup = camup - (camup * dir) * dir;
@@ -519,6 +519,6 @@ void geom_view::setView(const std::array<double,3>& cam_pos, const std::array<do
 
 void geom_view::setBackgroundColor(double r, double g, double b) {
   if(ren_ptr)
-    ren_ptr->bg_color = {r,g,b};
+    ren_ptr->bg_color = {(const float) r, (const float) g, (const float) b};
 }
 
