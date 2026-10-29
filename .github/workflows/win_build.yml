@@ -37,7 +37,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            install_MSVC/bin/geom_view.exe
+            geomVIew.tar.gz
           tag_name: latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
