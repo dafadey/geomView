@@ -1,6 +1,7 @@
 set WD=%cd%
 
-set ARCH=x86
+set ARCH=x64
+REM options are: x86 x65
 
 if "%~1" NEQ "" set ARCH=%~1
 
@@ -30,6 +31,10 @@ call :buildURL http://prdownloads.sourceforge.net/libpng/libpng-1.6.49.tar.gz li
 REM GEOMVIEW
 call :build "-DGLEW_DIR=%WD%\glew-cmake-glew-cmake-2.1.0\install_MSVC\lib\cmake\glew -Dglfw3_DIR=%WD%\glfw-3.4\install_MSVC\lib\cmake\glfw3 -DPNG_INCLUDE_DIR=%WD%\libpng-1.6.49\install_MSVC\include -DPNG_LIBRARY=%WD%\libpng-1.6.49\install_MSVC\lib\libpng16_static.lib -DZLIB_LIBRARY=%WD%\zlib-1.3.2\install_MSVC\lib\zs.lib"
 
+cp -r install_MSVC geomView
+tar czf geomView.tar.gz geomView
+rm -rf geomView
+
 echo.&goto:eof
 
 :buildURL
@@ -55,9 +60,8 @@ cmake ../ -A %ARCH% -DCMAKE_INSTALL_PREFIX=../install_MSVC %~1
 cmake --build . --config Release --target INSTALL
 cd ../
 
-cd build_MSVC_debug
-cmake ../ -A %ARCH% -DCMAKE_INSTALL_PREFIX=../install_MSVC_debug %~1
-cmake --build . --config Debug --target INSTALL
-cd ../
-
+REM cd build_MSVC_debug
+REM cmake ../ -A %ARCH% -DCMAKE_INSTALL_PREFIX=../install_MSVC_debug %~1
+REM cmake --build . --config Debug --target INSTALL
+REM cd ../
 goto:eof
