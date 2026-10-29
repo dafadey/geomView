@@ -25,10 +25,10 @@ jobs:
       - run: echo "The workflow is now ready to test your code on the runner."
       - name: list files in the repository
         run: |
-          ls ${{ github.workspace }}
+          ls ${{ env.GITHUB_WORKSPACE }}
       - name: build win64
+        working-directory: ${{ env.GITHUB_WORKSPACE }}
         run: | 
-          cd ${{ github.workspace }}
           win_build.bat
       - name: upload geom_view bundle
         uses: actions/upload-artifact@v4
@@ -39,7 +39,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ github.workspace }}/geomVIew.tar.gz
+            ${{ env.GITHUB_WORKSPACE }}/geomVIew.tar.gz
           tag_name: latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
